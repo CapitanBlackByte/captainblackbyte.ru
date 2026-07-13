@@ -107,22 +107,23 @@ textarea {
 }
 
 .logo-mark {
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.5rem;
+  height: 2.5rem;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  border-radius: 0.45rem;
-  border: 1px solid rgba(201, 162, 39, 0.45);
   line-height: 0;
   flex-shrink: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .logo-mark img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background: transparent;
 }
 
 .logo-text {
