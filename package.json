@@ -1,0 +1,24 @@
+{
+  "name": "programmer-portfolio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --host 0.0.0.0 --port 4173",
+    "start": "npm run build && npm run serve",
+    "host": "npm run build && npx --yes serve dist -l 4180 --no-port-switching",
+    "public": "cloudflared tunnel --url http://127.0.0.1:4180 --protocol http2",
+    "production": "npm run build && node server/production.mjs",
+    "production:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-production.ps1"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "acme-client": "^5.4.0",
+    "express": "^5.2.1"
+  }
+}

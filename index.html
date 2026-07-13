@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Капитан Чёрный Байт — пиратский код, чистые рейды и продукты, которые забирают рынок" />
+  <meta name="theme-color" content="#07110e" />
+  <title>Капитан Чёрный Байт — пиратская разработка</title>
+</head>
+<body>
+  <div class="sea-fog" aria-hidden="true"></div>
+  <div class="map-grid" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="logo" href="#top" aria-label="На главную">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2c-3.2 0-5.8 2.1-5.8 5.2 0 1.7.8 3.2 2.1 4.2L7 14.2h2.1l.7 1.6H9.2V18h5.6v-2.2h-.6l.7-1.6H17l-1.3-2.8c1.3-1 2.1-2.5 2.1-4.2C17.8 4.1 15.2 2 12 2zm-2.2 4.2a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zm4.4 0a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM10.8 19.2 9.6 22h1.6l.8-2.8h.4L13.2 22h1.6l-1.2-2.8h-2.8z"/></svg>
+      </span>
+      <span class="logo-text"><span class="logo-rank">Капитан</span> Чёрный Байт</span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Основная навигация">
+      <a href="#loot">Трофеи</a>
+      <a href="#manifesto">Манифест</a>
+      <a href="#contact">Связь</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="menu-button" id="menuButton" type="button" aria-label="Открыть меню" aria-expanded="false">
+        <span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#loot">Трофеи</a>
+    <a href="#manifesto">Манифест</a>
+    <a href="#contact">Связь</a>
+  </div>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-atmosphere" aria-hidden="true">
+        <div class="horizon"></div>
+        <div class="ship-silhouette">
+          <svg viewBox="0 0 900 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class="sail sail-main" d="M430 70 L430 250 L560 210 Z" fill="currentColor" opacity=".55"/>
+            <path class="sail sail-fore" d="M430 100 L430 220 L340 195 Z" fill="currentColor" opacity=".4"/>
+            <path d="M430 55 V280" stroke="currentColor" stroke-width="4" opacity=".7"/>
+            <path d="M180 280 C280 250, 620 250, 740 285 L700 310 C560 285, 320 285, 220 308 Z" fill="currentColor" opacity=".85"/>
+            <path d="M250 278 L270 220 L290 278" stroke="currentColor" stroke-width="3" opacity=".5"/>
+            <circle cx="620" cy="120" r="28" stroke="currentColor" stroke-width="3" opacity=".25"/>
+            <path d="M620 92 V148 M592 120 H648" stroke="currentColor" stroke-width="2" opacity=".2"/>
+          </svg>
+        </div>
+        <div class="flag-wave">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="hero-copy">
+        <p class="brand-mark">
+          <span class="brand-rank">Капитан</span>
+          <span class="brand-name">Чёрный Байт</span>
+        </p>
+        <h1>Код как абордаж:<br />быстро, метко, без жалости к легаси</h1>
+        <p class="hero-text">
+          Собираем веб, мобильные приложения и автоматизацию — чтобы ваш продукт брал рынок, а не тонул в чужом штиле
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#loot">Смотреть трофеи</a>
+          <a class="button button-secondary" href="#contact">На борт</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section loot-section" id="loot">
+      <div class="section-heading">
+        <span class="section-kicker">Трофеи рейда</span>
+        <h2>То, что уже захвачено</h2>
+        <p>Четыре операции, где важны были скорость, архитектура и результат — не флаги ради флагов</p>
+      </div>
+
+      <div class="loot-filters" role="group" aria-label="Фильтр трофеев">
+        <button class="filter-button active" data-filter="all" type="button">Все</button>
+        <button class="filter-button" data-filter="web" type="button">Web</button>
+        <button class="filter-button" data-filter="mobile" type="button">Mobile</button>
+        <button class="filter-button" data-filter="automation" type="button">Автоматизация</button>
+      </div>
+
+      <div class="loot-list">
+        <article class="loot-item reveal" data-category="web">
+          <div class="loot-year">2026</div>
+          <div class="loot-body">
+            <span class="loot-type">Web-платформа</span>
+            <h3>Аналитическая система для бизнеса</h3>
+            <p>Кабинет продаж и отчётности в реальном времени — без лишней палубы интерфейса</p>
+            <div class="tags"><span>Next.js</span><span>TypeScript</span><span>PostgreSQL</span></div>
+            <button class="text-link open-project" type="button" data-project="analytics">Подробнее о рейде →</button>
+          </div>
+          <div class="loot-visual loot-visual-chart" aria-hidden="true">
+            <svg viewBox="0 0 320 140">
+              <path d="M10 110 C50 100, 70 40, 110 70 S180 130, 220 55 S280 20, 310 45" fill="none" stroke="currentColor" stroke-width="3"/>
+              <path d="M10 110 C50 100, 70 40, 110 70 S180 130, 220 55 S280 20, 310 45 L310 130 L10 130 Z" fill="currentColor" opacity=".12"/>
+            </svg>
+          </div>
+        </article>
+
+        <article class="loot-item reveal" data-category="mobile">
+          <div class="loot-year">2025</div>
+          <div class="loot-body">
+            <span class="loot-type">Mobile</span>
+            <h3>Приложение для сотрудников</h3>
+            <p>Задачи, документы и сигнал с корабля — даже когда берег далеко</p>
+            <div class="tags"><span>Kotlin</span><span>Compose</span><span>REST API</span></div>
+            <button class="text-link open-project" type="button" data-project="mobile">Подробнее о рейде →</button>
+          </div>
+          <div class="loot-visual loot-visual-phone" aria-hidden="true">
+            <div class="phone-frame">
+              <div class="phone-screen-mini">
+                <strong>12</strong>
+                <span>активных задач</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="loot-item reveal" data-category="automation">
+          <div class="loot-year">2025</div>
+          <div class="loot-body">
+            <span class="loot-type">Автоматизация</span>
+            <h3>Интеграция 1С с внешними сервисами</h3>
+            <p>Обмен грузами данных между 1С, CRM и внутренними трюмами без ручного абордажа</p>
+            <div class="tags"><span>1C</span><span>Java</span><span>RabbitMQ</span></div>
+            <button class="text-link open-project" type="button" data-project="integration">Подробнее о рейде →</button>
+          </div>
+          <div class="loot-visual loot-visual-flow" aria-hidden="true">
+            <div class="flow-chain">
+              <span>1C</span><i>→</i><span>API</span><i>→</i><span>CRM</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="loot-item reveal" data-category="web">
+          <div class="loot-year">2024</div>
+          <div class="loot-body">
+            <span class="loot-type">Backend</span>
+            <h3>Высоконагруженный API</h3>
+            <p>Обработка заказов под штормовой нагрузкой — с кешем, мониторингом и запасом по трюму</p>
+            <div class="tags"><span>Java</span><span>Spring Boot</span><span>Redis</span></div>
+            <button class="text-link open-project" type="button" data-project="api">Подробнее о рейде →</button>
+          </div>
+          <div class="loot-visual loot-visual-log" aria-hidden="true">
+            <code>POST /orders  200  34ms</code>
+            <code>GET  /users   200  18ms</code>
+            <code>PUT  /status  200  12ms</code>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section manifesto-section" id="manifesto">
+      <div class="manifesto-layout">
+        <div class="manifesto-copy reveal">
+          <span class="section-kicker">Манифест</span>
+          <h2>Не нанимаемся в чужой флот — ведём рейд под своим флагом</h2>
+          <p>
+            Нам важна цель рейда, а не толщина ТЗ. Архитектура, интерфейс, backend —
+            всё подчиняется одному: продукт должен работать и приносить добычу
+          </p>
+          <a class="button button-secondary" href="#contact">Связаться с нами</a>
+        </div>
+
+        <ol class="code-of-seas reveal">
+          <li>
+            <strong>Чистый трюм</strong>
+            <span>Код, который можно чинить на ходу и масштабировать без бунта</span>
+          </li>
+          <li>
+            <strong>Честный курс</strong>
+            <span>Показываем промежуточный результат и объясняем решения без тумана</span>
+          </li>
+          <li>
+            <strong>Добыча важнее флагов</strong>
+            <span>Технологии — только те, что реально двигают продукт</span>
+          </li>
+        </ol>
+
+        <p class="crew-mention reveal">Голоса экипажа появятся после следующего рейда</p>
+      </div>
+    </section>
+
+    <section class="section arsenal-section">
+      <div class="section-heading reveal">
+        <span class="section-kicker">Арсенал</span>
+        <h2>Чем берём на абордаж</h2>
+      </div>
+      <div class="arsenal-grid">
+        <article class="arsenal-item reveal">
+          <h3>Frontend</h3>
+          <ul class="arsenal-stack">
+            <li>React</li>
+            <li>Next.js</li>
+            <li>TypeScript</li>
+            <li>JavaScript</li>
+            <li>HTML</li>
+            <li>CSS</li>
+            <li>Vite</li>
+            <li>Tailwind</li>
+          </ul>
+          <p class="arsenal-note">Адаптив, анимации и интерфейсы без балласта</p>
+        </article>
+        <article class="arsenal-item reveal">
+          <h3>Backend</h3>
+          <ul class="arsenal-stack">
+            <li>Java</li>
+            <li>Spring Boot</li>
+            <li>Kotlin</li>
+            <li>REST API</li>
+            <li>GraphQL</li>
+            <li>PostgreSQL</li>
+            <li>Redis</li>
+            <li>RabbitMQ</li>
+          </ul>
+          <p class="arsenal-note">Сервисы, очереди и хранилища под штормовую нагрузку</p>
+        </article>
+        <article class="arsenal-item reveal">
+          <h3>Mobile</h3>
+          <ul class="arsenal-stack">
+            <li>Kotlin</li>
+            <li>Jetpack Compose</li>
+            <li>Android SDK</li>
+            <li>Room</li>
+            <li>Retrofit</li>
+            <li>Firebase</li>
+            <li>Push</li>
+            <li>Offline-first</li>
+          </ul>
+          <p class="arsenal-note">Офлайн, push и связь с береговыми сервисами</p>
+        </article>
+        <article class="arsenal-item reveal">
+          <h3>DevOps</h3>
+          <ul class="arsenal-stack">
+            <li>Docker</li>
+            <li>GitHub Actions</li>
+            <li>Linux</li>
+            <li>Nginx</li>
+            <li>CI/CD</li>
+            <li>Monitoring</li>
+            <li>Git</li>
+            <li>Cloud</li>
+          </ul>
+          <p class="arsenal-note">Чтобы корабль не тонул на проде</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section contact-section" id="contact">
+      <div class="contact-panel reveal">
+        <div class="contact-copy">
+          <span class="section-kicker">Связь</span>
+          <h2>Есть цель?<br />Поднимаем паруса</h2>
+          <p>
+            Опишите задачу, продукт или рейд. Оценим подход, предложим курс
+            и план первой атаки
+          </p>
+          <div class="contact-links">
+            <a href="mailto:nik2shar@yahoo.com">nik2shar@yahoo.com</a>
+            <a href="https://t.me/NikolayBlackByte" target="_blank" rel="noreferrer">@NikolayBlackByte</a>
+            <a href="https://github.com/your_username" target="_blank" rel="noreferrer">GitHub</a>
+          </div>
+        </div>
+
+        <form class="contact-form" id="contactForm">
+          <label>
+            <span>Ваше имя</span>
+            <input type="text" name="name" placeholder="Как звать на борту?" required />
+          </label>
+          <label>
+            <span>Email или Telegram</span>
+            <input type="text" name="contact" placeholder="@username или email" required />
+          </label>
+          <label>
+            <span>О рейде</span>
+            <textarea name="message" rows="5" placeholder="Коротко: цель, сроки, добыча" required></textarea>
+          </label>
+          <button class="button button-primary" type="submit">Отправить сигнал</button>
+          <p class="form-note">Форма откроет почтовый клиент. Для боевой отправки подключите Formspree или свой backend</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="logo" href="#top">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2c-3.2 0-5.8 2.1-5.8 5.2 0 1.7.8 3.2 2.1 4.2L7 14.2h2.1l.7 1.6H9.2V18h5.6v-2.2h-.6l.7-1.6H17l-1.3-2.8c1.3-1 2.1-2.5 2.1-4.2C17.8 4.1 15.2 2 12 2zm-2.2 4.2a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zm4.4 0a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM10.8 19.2 9.6 22h1.6l.8-2.8h.4L13.2 22h1.6l-1.2-2.8h-2.8z"/></svg>
+      </span>
+      <span class="logo-text"><span class="logo-rank">Капитан</span> Чёрный Байт</span>
+    </a>
+    <p>Капитан Чёрный Байт — команда пиратской разработки цифровых продуктов</p>
+    <div class="footer-right">
+      <span>© <span id="currentYear"></span></span>
+      <a href="#top">Наверх</a>
+    </div>
+  </footer>
+
+  <div class="modal" id="projectModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-content" role="document">
+      <button class="modal-close" type="button" aria-label="Закрыть" data-close-modal>×</button>
+      <span class="section-kicker" id="modalType"></span>
+      <h2 id="modalTitle"></h2>
+      <p id="modalDescription"></p>
+      <div class="modal-details" id="modalDetails"></div>
+      <div class="tags" id="modalTags"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

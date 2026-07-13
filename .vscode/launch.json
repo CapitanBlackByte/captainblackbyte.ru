@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Dev: Vite + Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "https://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "npm: dev"
+    },
+    {
+      "name": "Preview: production build",
+      "type": "chrome",
+      "request": "launch",
+      "url": "https://localhost:4173",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "npm: preview"
+    }
+  ]
+}

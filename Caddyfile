@@ -1,0 +1,15 @@
+{
+	email nik2shar@yahoo.com
+}
+
+captainblackbyte.ru, www.captainblackbyte.ru {
+	root * dist
+	file_server
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
