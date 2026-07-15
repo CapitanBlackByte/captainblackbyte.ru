@@ -43,20 +43,45 @@
   <main id="top">
     <section class="hero">
       <div class="hero-atmosphere" aria-hidden="true">
-        <div class="horizon"></div>
-        <div class="ship-silhouette">
-          <svg viewBox="0 0 900 420" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path class="sail sail-main" d="M430 70 L430 250 L560 210 Z" fill="currentColor" opacity=".55"/>
-            <path class="sail sail-fore" d="M430 100 L430 220 L340 195 Z" fill="currentColor" opacity=".4"/>
-            <path d="M430 55 V280" stroke="currentColor" stroke-width="4" opacity=".7"/>
-            <path d="M180 280 C280 250, 620 250, 740 285 L700 310 C560 285, 320 285, 220 308 Z" fill="currentColor" opacity=".85"/>
-            <path d="M250 278 L270 220 L290 278" stroke="currentColor" stroke-width="3" opacity=".5"/>
-            <circle cx="620" cy="120" r="28" stroke="currentColor" stroke-width="3" opacity=".25"/>
-            <path d="M620 92 V148 M592 120 H648" stroke="currentColor" stroke-width="2" opacity=".2"/>
+        <div class="night-sky">
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="moon"></span>
+        </div>
+        <div class="shooting-stars" aria-hidden="true"></div>
+        <div class="compass-rose">
+          <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="78" stroke="currentColor" stroke-width="1" opacity=".35"/>
+            <circle cx="100" cy="100" r="52" stroke="currentColor" stroke-width="1" opacity=".25"/>
+            <path d="M100 22 L112 100 L100 178 L88 100 Z" fill="currentColor" opacity=".28"/>
+            <path d="M22 100 L100 88 L178 100 L100 112 Z" fill="currentColor" opacity=".16"/>
+            <circle cx="100" cy="100" r="6" fill="currentColor" opacity=".45"/>
+            <text x="100" y="18" text-anchor="middle" fill="currentColor" font-size="14" font-family="Cinzel, serif" opacity=".5">N</text>
           </svg>
         </div>
-        <div class="flag-wave">
-          <span></span><span></span><span></span>
+        <div class="horizon"></div>
+        <div class="ship-silhouette" aria-hidden="true">
+          <img class="ship-drawing" src="/hero-ship.png?v=19" alt="" width="900" height="506" decoding="async" />
+          <div class="ship-waves">
+            <div class="ship-waves-flow">
+              <svg class="ship-waves-track" viewBox="0 0 1200 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 40 Q50 18 100 40 T200 40 T300 40 T400 40 T500 40 T600 40 T700 40 T800 40 T900 40 T1000 40 T1100 40 T1200 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M0 52 Q40 34 80 52 T160 52 T240 52 T320 52 T400 52 T480 52 T560 52 T640 52 T720 52 T800 52 T880 52 T960 52 T1040 52 T1120 52 T1200 52" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".65"/>
+                <path d="M0 64 Q30 50 60 64 T120 64 T180 64 T240 64 T300 64 T360 64 T420 64 T480 64 T540 64 T600 64 T660 64 T720 64 T780 64 T840 64 T900 64 T960 64 T1020 64 T1080 64 T1140 64 T1200 64" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" opacity=".4"/>
+              </svg>
+              <svg class="ship-waves-track" viewBox="0 0 1200 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 40 Q50 18 100 40 T200 40 T300 40 T400 40 T500 40 T600 40 T700 40 T800 40 T900 40 T1000 40 T1100 40 T1200 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M0 52 Q40 34 80 52 T160 52 T240 52 T320 52 T400 52 T480 52 T560 52 T640 52 T720 52 T800 52 T880 52 T960 52 T1040 52 T1120 52 T1200 52" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".65"/>
+                <path d="M0 64 Q30 50 60 64 T120 64 T180 64 T240 64 T300 64 T360 64 T420 64 T480 64 T540 64 T600 64 T660 64 T720 64 T780 64 T840 64 T900 64 T960 64 T1020 64 T1080 64 T1140 64 T1200 64" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" opacity=".4"/>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 

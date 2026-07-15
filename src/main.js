@@ -153,6 +153,44 @@ const observer = new IntersectionObserver(
 
 document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
 
+const shootingStars = document.querySelector(".shooting-stars");
+if (shootingStars && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const spawnShootingStar = () => {
+    const star = document.createElement("span");
+    star.className = "shooting-star";
+    const startLeft = 8 + Math.random() * 70;
+    const startTop = 4 + Math.random() * 42;
+    const distance = 160 + Math.random() * 160;
+    const angle = 22 + Math.random() * 18;
+    const duration = 0.65 + Math.random() * 0.45;
+    const rad = (angle * Math.PI) / 180;
+
+    star.style.left = `${startLeft}%`;
+    star.style.top = `${startTop}%`;
+    star.style.setProperty("--fall-angle", `${angle}deg`);
+    star.style.setProperty("--fall-x", `${Math.cos(rad) * distance}px`);
+    star.style.setProperty("--fall-y", `${Math.sin(rad) * distance}px`);
+    star.style.setProperty("--fall-duration", `${duration}s`);
+
+    shootingStars.appendChild(star);
+    star.addEventListener("animationend", () => star.remove(), { once: true });
+  };
+
+  const scheduleNext = () => {
+    const delay = 3500 + Math.random() * 9000;
+    window.setTimeout(() => {
+      spawnShootingStar();
+      if (Math.random() < 0.22) {
+        window.setTimeout(spawnShootingStar, 280 + Math.random() * 520);
+      }
+      scheduleNext();
+    }, delay);
+  };
+
+  window.setTimeout(spawnShootingStar, 1800 + Math.random() * 2200);
+  scheduleNext();
+}
+
 contactForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
