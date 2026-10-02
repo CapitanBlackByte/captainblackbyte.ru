@@ -1,11 +1,13 @@
 import "./styles.css";
 
+document.documentElement.classList.add("ready");
+
 const projectData = {
   analytics: {
     type: "Web-платформа",
     title: "Аналитическая система для бизнеса",
     description:
-      "Интерфейс для анализа продаж, контроля ключевых показателей и подготовки отчётности. Основной акцент — скорость работы, понятная визуализация и удобство для экипажа без технической подготовки",
+      "Интерфейс для анализа продаж, контроля ключевых показателей и подготовки отчётности. Основной акцент — скорость работы, понятная визуализация и удобство для людей без технической подготовки",
     details: [
       ["Команда", "Full-stack"],
       ["Срок", "4 месяца"],
@@ -17,7 +19,7 @@ const projectData = {
     type: "Мобильное приложение",
     title: "Рабочее пространство сотрудника",
     description:
-      "Android-приложение для работы с задачами, документами и уведомлениями. Поддерживает офлайн-режим и синхронизацию с береговыми сервисами компании",
+      "Android-приложение для работы с задачами, документами и уведомлениями. Поддерживает офлайн-режим и синхронизацию с сервисами компании",
     details: [
       ["Команда", "Android"],
       ["Срок", "3 месяца"],
@@ -82,6 +84,29 @@ mobileMenu.querySelectorAll("a").forEach((link) => {
   });
 });
 
+const cleanAddress = () => {
+  const next = window.location.pathname + window.location.search;
+  if (window.location.hash) history.replaceState(null, "", next);
+};
+
+document.querySelectorAll('a[href^="#"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    const id = link.getAttribute("href").slice(1);
+    const target = document.getElementById(id);
+    if (!target) return;
+    event.preventDefault();
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    cleanAddress();
+  });
+});
+
+if (window.location.hash) {
+  const target = document.getElementById(window.location.hash.slice(1));
+  if (target) target.scrollIntoView({ block: "start" });
+  cleanAddress();
+}
+
 window.addEventListener("resize", () => {
   if (window.innerWidth > 760 && mobileMenu.classList.contains("open")) {
     mobileMenu.classList.remove("open");
@@ -135,8 +160,43 @@ document.querySelectorAll("[data-close-modal]").forEach((element) => {
   element.addEventListener("click", closeProjectModal);
 });
 
+const articleReader = document.getElementById("articleReader");
+const readerStatus = document.getElementById("readerStatus");
+const readerTitle = document.getElementById("readerTitle");
+const readerLead = document.getElementById("readerLead");
+const readerBody = document.getElementById("readerBody");
+const readerMeta = document.getElementById("readerMeta");
+
+function openArticle(card) {
+  readerStatus.textContent = card.querySelector(".article-status").textContent;
+  readerTitle.textContent = card.querySelector("h3").textContent;
+  readerLead.textContent = card.querySelector(".article-lead").textContent;
+  readerBody.innerHTML = card.querySelector(".article-source").innerHTML;
+  readerMeta.innerHTML = card.querySelector(".article-meta").innerHTML;
+  articleReader.querySelector(".reader-screen").scrollTop = 0;
+  articleReader.classList.add("open");
+  articleReader.setAttribute("aria-hidden", "false");
+  body.classList.add("modal-open");
+}
+
+function closeArticle() {
+  articleReader.classList.remove("open");
+  articleReader.setAttribute("aria-hidden", "true");
+  if (!projectModal.classList.contains("open")) body.classList.remove("modal-open");
+}
+
+document.querySelectorAll(".open-article").forEach((button) => {
+  button.addEventListener("click", () => openArticle(button.closest(".article-card")));
+});
+
+document.querySelectorAll("[data-close-reader]").forEach((element) => {
+  element.addEventListener("click", closeArticle);
+});
+
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeProjectModal();
+  if (event.key !== "Escape") return;
+  if (articleReader.classList.contains("open")) closeArticle();
+  else closeProjectModal();
 });
 
 const observer = new IntersectionObserver(
@@ -152,6 +212,62 @@ const observer = new IntersectionObserver(
 );
 
 document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
+
+const compass = document.querySelector(".compass-rose");
+const compassPermit = document.querySelector(".compass-permit");
+
+function compassHeading(event) {
+  if (Number.isFinite(event.webkitCompassHeading)) return event.webkitCompassHeading;
+  if (event.absolute === true && Number.isFinite(event.alpha)) return (360 - event.alpha) % 360;
+  return null;
+}
+
+function pointCompass(heading) {
+  const screenAngle = window.screen.orientation
+    ? window.screen.orientation.angle
+    : Number(window.orientation) || 0;
+  compass.style.transform = `rotate(${-(heading - screenAngle)}deg)`;
+  compass.classList.add("is-live");
+}
+
+function onCompassOrientation(event) {
+  const heading = compassHeading(event);
+  if (heading == null) return;
+  pointCompass(heading);
+}
+
+function watchCompass() {
+  if ("ondeviceorientationabsolute" in window) {
+    window.addEventListener("deviceorientationabsolute", onCompassOrientation);
+    return;
+  }
+  window.addEventListener("deviceorientation", onCompassOrientation);
+}
+
+async function enableCompass() {
+  const Orientation = window.DeviceOrientationEvent;
+  if (!Orientation) return;
+  if (typeof Orientation.requestPermission === "function") {
+    let state = "denied";
+    try {
+      state = await Orientation.requestPermission();
+    } catch {
+      return;
+    }
+    if (state !== "granted") return;
+    compassPermit.hidden = true;
+  }
+  watchCompass();
+}
+
+if (compass && compassPermit && window.DeviceOrientationEvent) {
+  if (typeof DeviceOrientationEvent.requestPermission === "function") {
+    compassPermit.hidden = false;
+    compassPermit.addEventListener("click", enableCompass);
+  } else {
+    enableCompass();
+  }
+}
 
 const shootingStars = document.querySelector(".shooting-stars");
 if (shootingStars && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -199,9 +315,9 @@ contactForm.addEventListener("submit", (event) => {
   const contact = data.get("contact");
   const message = data.get("message");
 
-  const subject = encodeURIComponent(`Новый рейд — сигнал от ${name}`);
+  const subject = encodeURIComponent(`Заявка от ${name}`);
   const bodyText = encodeURIComponent(
-    `Имя: ${name}\nКонтакт: ${contact}\n\nОписание рейда:\n${message}`
+    `Имя: ${name}\nКонтакт: ${contact}\n\nЗадача:\n${message}`
   );
 
   window.location.href = `mailto:nik2shar@yahoo.com?subject=${subject}&body=${bodyText}`;
