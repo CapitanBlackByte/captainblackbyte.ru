@@ -1,87 +1,37 @@
+import "@fontsource/cormorant/cyrillic-500.css";
+import "@fontsource/cormorant/latin-500.css";
+import "@fontsource/cormorant/cyrillic-500-italic.css";
+import "@fontsource/cormorant/latin-500-italic.css";
+import "@fontsource/cormorant/cyrillic-600.css";
+import "@fontsource/cormorant/latin-600.css";
+import "@fontsource-variable/onest/wght.css";
+import "@fontsource-variable/jetbrains-mono/wght.css";
 import "./styles.css";
+import { initShip } from "./ship.js";
+import { drawChart } from "./chart.js";
 
-document.documentElement.classList.add("ready");
-
-const projectData = {
-  analytics: {
-    type: "Web-платформа",
-    title: "Аналитическая система для бизнеса",
-    description:
-      "Интерфейс для анализа продаж, контроля ключевых показателей и подготовки отчётности. Основной акцент — скорость работы, понятная визуализация и удобство для людей без технической подготовки",
-    details: [
-      ["Команда", "Full-stack"],
-      ["Срок", "4 месяца"],
-      ["Результат", "–38% рутины"],
-    ],
-    tags: ["Next.js", "TypeScript", "PostgreSQL", "Docker"],
-  },
-  mobile: {
-    type: "Мобильное приложение",
-    title: "Рабочее пространство сотрудника",
-    description:
-      "Android-приложение для работы с задачами, документами и уведомлениями. Поддерживает офлайн-режим и синхронизацию с сервисами компании",
-    details: [
-      ["Команда", "Android"],
-      ["Срок", "3 месяца"],
-      ["Платформа", "Android"],
-    ],
-    tags: ["Kotlin", "Jetpack Compose", "Room", "REST API"],
-  },
-  integration: {
-    type: "Автоматизация",
-    title: "Интеграция 1С, CRM и внешних сервисов",
-    description:
-      "Сервис обмена данными между учётной системой, CRM и внутренней инфраструктурой. Реализованы очереди, журналирование, повторная отправка и контроль ошибок",
-    details: [
-      ["Команда", "Backend"],
-      ["Срок", "2 месяца"],
-      ["Объём", "50k+ операций"],
-    ],
-    tags: ["1C", "Java", "RabbitMQ", "PostgreSQL"],
-  },
-  api: {
-    type: "Backend",
-    title: "Высоконагруженный API-сервис",
-    description:
-      "Сервис обработки заказов с кешированием, мониторингом и горизонтальным масштабированием. Архитектура рассчитана на рост нагрузки без полного переписывания продукта",
-    details: [
-      ["Команда", "Backend"],
-      ["Срок", "10 недель"],
-      ["Нагрузка", "1.5k RPS"],
-    ],
-    tags: ["Java", "Spring Boot", "Redis", "Docker"],
-  },
-};
-
+const root = document.documentElement;
 const body = document.body;
-const menuButton = document.getElementById("menuButton");
-const mobileMenu = document.getElementById("mobileMenu");
-const filterButtons = document.querySelectorAll(".filter-button");
-const projectCards = document.querySelectorAll(".loot-item");
-const projectModal = document.getElementById("projectModal");
-const modalType = document.getElementById("modalType");
-const modalTitle = document.getElementById("modalTitle");
-const modalDescription = document.getElementById("modalDescription");
-const modalDetails = document.getElementById("modalDetails");
-const modalTags = document.getElementById("modalTags");
-const contactForm = document.getElementById("contactForm");
+const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 document.getElementById("currentYear").textContent = new Date().getFullYear();
 
-menuButton.addEventListener("click", () => {
-  const isOpen = mobileMenu.classList.toggle("open");
-  menuButton.classList.toggle("active", isOpen);
-  menuButton.setAttribute("aria-expanded", String(isOpen));
-  body.classList.toggle("menu-open", isOpen);
-});
+const menuButton = document.getElementById("menuButton");
+const mobileMenu = document.getElementById("mobileMenu");
 
-mobileMenu.querySelectorAll("a").forEach((link) => {
-  link.addEventListener("click", () => {
-    mobileMenu.classList.remove("open");
-    menuButton.classList.remove("active");
-    menuButton.setAttribute("aria-expanded", "false");
-    body.classList.remove("menu-open");
-  });
+function setMenu(open) {
+  mobileMenu.classList.toggle("open", open);
+  menuButton.classList.toggle("active", open);
+  menuButton.setAttribute("aria-expanded", String(open));
+  menuButton.setAttribute("aria-label", open ? "Закрыть меню" : "Открыть меню");
+  body.classList.toggle("menu-open", open);
+}
+
+menuButton.addEventListener("click", () => setMenu(!mobileMenu.classList.contains("open")));
+mobileMenu.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMenu(false)));
+
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 1180 && mobileMenu.classList.contains("open")) setMenu(false);
 });
 
 const cleanAddress = () => {
@@ -91,12 +41,10 @@ const cleanAddress = () => {
 
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
   link.addEventListener("click", (event) => {
-    const id = link.getAttribute("href").slice(1);
-    const target = document.getElementById(id);
+    const target = document.getElementById(link.getAttribute("href").slice(1));
     if (!target) return;
     event.preventDefault();
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
     cleanAddress();
   });
 });
@@ -107,86 +55,109 @@ if (window.location.hash) {
   cleanAddress();
 }
 
-window.addEventListener("resize", () => {
-  if (window.innerWidth > 760 && mobileMenu.classList.contains("open")) {
-    mobileMenu.classList.remove("open");
-    menuButton.classList.remove("active");
-    menuButton.setAttribute("aria-expanded", "false");
-    body.classList.remove("menu-open");
-  }
-});
+const header = document.getElementById("siteHeader");
+const syncHeader = () => header.classList.toggle("is-scrolled", window.scrollY > 40);
+syncHeader();
+window.addEventListener("scroll", syncHeader, { passive: true });
 
-filterButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    filterButtons.forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-
-    const filter = button.dataset.filter;
-    projectCards.forEach((card) => {
-      const shouldShow = filter === "all" || card.dataset.category === filter;
-      card.classList.toggle("hidden", !shouldShow);
+document.querySelectorAll("[data-split]").forEach((heading) => {
+  let index = 0;
+  const wrap = (node) => {
+    [...node.childNodes].forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const fragment = document.createDocumentFragment();
+        child.textContent.split(/(\s+)/).forEach((part) => {
+          if (!part) return;
+          if (/^\s+$/.test(part)) {
+            fragment.append(" ");
+            return;
+          }
+          const word = document.createElement("span");
+          word.className = "word";
+          const inner = document.createElement("span");
+          inner.textContent = part;
+          inner.style.setProperty("--i", String(index));
+          index += 1;
+          word.append(inner);
+          fragment.append(word);
+        });
+        child.replaceWith(fragment);
+      } else {
+        wrap(child);
+      }
     });
-  });
+  };
+  wrap(heading);
+  heading.classList.add("is-split", "reveal-split");
 });
 
-function openProjectModal(projectKey) {
-  const project = projectData[projectKey];
-  if (!project) return;
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("visible");
+      revealObserver.unobserve(entry.target);
+    });
+  },
+  { threshold: 0.14 }
+);
 
-  modalType.textContent = project.type;
-  modalTitle.textContent = project.title;
-  modalDescription.textContent = project.description;
-  modalDetails.innerHTML = project.details
-    .map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`)
-    .join("");
-  modalTags.innerHTML = project.tags.map((tag) => `<span>${tag}</span>`).join("");
+document.querySelectorAll(".reveal, .reveal-split").forEach((element) => revealObserver.observe(element));
 
-  projectModal.classList.add("open");
-  projectModal.setAttribute("aria-hidden", "false");
-  body.classList.add("modal-open");
-}
+const rail = document.querySelector(".rail");
+const railLinks = [...rail.querySelectorAll("a")];
+const railObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      railLinks.forEach((link) => {
+        const on = link.getAttribute("href") === `#${entry.target.id}`;
+        if (on) link.setAttribute("aria-current", "true");
+        else link.removeAttribute("aria-current");
+      });
+    });
+  },
+  { rootMargin: "-50% 0px -50% 0px" }
+);
+document.querySelectorAll(".stop").forEach((stop) => railObserver.observe(stop));
 
-function closeProjectModal() {
-  projectModal.classList.remove("open");
-  projectModal.setAttribute("aria-hidden", "true");
-  body.classList.remove("modal-open");
-}
-
-document.querySelectorAll(".open-project").forEach((button) => {
-  button.addEventListener("click", () => openProjectModal(button.dataset.project));
-});
-
-document.querySelectorAll("[data-close-modal]").forEach((element) => {
-  element.addEventListener("click", closeProjectModal);
-});
+new IntersectionObserver(([entry]) => rail.classList.toggle("is-on", entry.isIntersecting), {
+  rootMargin: "-40% 0px -40% 0px",
+}).observe(document.getElementById("stops"));
 
 const articleReader = document.getElementById("articleReader");
+const readerScreen = articleReader.querySelector(".reader-screen");
 const readerStatus = document.getElementById("readerStatus");
 const readerTitle = document.getElementById("readerTitle");
 const readerLead = document.getElementById("readerLead");
 const readerBody = document.getElementById("readerBody");
 const readerMeta = document.getElementById("readerMeta");
+let readerOrigin = null;
 
-function openArticle(card) {
+function openArticle(card, origin) {
   readerStatus.textContent = card.querySelector(".article-status").textContent;
-  readerTitle.textContent = card.querySelector("h3").textContent;
+  readerTitle.textContent = card.querySelector(".article-title").textContent;
   readerLead.textContent = card.querySelector(".article-lead").textContent;
   readerBody.innerHTML = card.querySelector(".article-source").innerHTML;
-  readerMeta.innerHTML = card.querySelector(".article-meta").innerHTML;
-  articleReader.querySelector(".reader-screen").scrollTop = 0;
+  readerMeta.textContent = card.querySelector(".article-meta").textContent;
+  readerScreen.scrollTop = 0;
+  readerOrigin = origin;
   articleReader.classList.add("open");
   articleReader.setAttribute("aria-hidden", "false");
   body.classList.add("modal-open");
+  readerScreen.focus();
 }
 
 function closeArticle() {
+  if (!articleReader.classList.contains("open")) return;
   articleReader.classList.remove("open");
   articleReader.setAttribute("aria-hidden", "true");
-  if (!projectModal.classList.contains("open")) body.classList.remove("modal-open");
+  body.classList.remove("modal-open");
+  readerOrigin?.focus();
 }
 
 document.querySelectorAll(".open-article").forEach((button) => {
-  button.addEventListener("click", () => openArticle(button.closest(".article-card")));
+  button.addEventListener("click", () => openArticle(button.closest(".article-card"), button));
 });
 
 document.querySelectorAll("[data-close-reader]").forEach((element) => {
@@ -194,131 +165,136 @@ document.querySelectorAll("[data-close-reader]").forEach((element) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
-  if (articleReader.classList.contains("open")) closeArticle();
-  else closeProjectModal();
+  if (event.key === "Escape") {
+    closeArticle();
+    if (mobileMenu.classList.contains("open")) setMenu(false);
+  }
+  if (event.key === "Tab" && articleReader.classList.contains("open")) {
+    const focusable = [...readerScreen.querySelectorAll("button, a[href]")];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first) return;
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === readerScreen)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 });
 
-const observer = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("visible");
-        observer.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.14 }
-);
-
-document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
-
-const compass = document.querySelector(".compass-rose");
-const compassPermit = document.querySelector(".compass-permit");
-
-function compassHeading(event) {
-  if (Number.isFinite(event.webkitCompassHeading)) return event.webkitCompassHeading;
-  if (event.absolute === true && Number.isFinite(event.alpha)) return (360 - event.alpha) % 360;
-  return null;
-}
-
-function pointCompass(heading) {
-  const screenAngle = window.screen.orientation
-    ? window.screen.orientation.angle
-    : Number(window.orientation) || 0;
-  compass.style.transform = `rotate(${-(heading - screenAngle)}deg)`;
-  compass.classList.add("is-live");
-}
-
-function onCompassOrientation(event) {
-  const heading = compassHeading(event);
-  if (heading == null) return;
-  pointCompass(heading);
-}
-
-function watchCompass() {
-  if ("ondeviceorientationabsolute" in window) {
-    window.addEventListener("deviceorientationabsolute", onCompassOrientation);
-    return;
-  }
-  window.addEventListener("deviceorientation", onCompassOrientation);
-}
-
-async function enableCompass() {
-  const Orientation = window.DeviceOrientationEvent;
-  if (!Orientation) return;
-  if (typeof Orientation.requestPermission === "function") {
-    let state = "denied";
-    try {
-      state = await Orientation.requestPermission();
-    } catch {
-      return;
-    }
-    if (state !== "granted") return;
-    compassPermit.hidden = true;
-  }
-  watchCompass();
-}
-
-if (compass && compassPermit && window.DeviceOrientationEvent) {
-  if (typeof DeviceOrientationEvent.requestPermission === "function") {
-    compassPermit.hidden = false;
-    compassPermit.addEventListener("click", enableCompass);
-  } else {
-    enableCompass();
-  }
-}
-
-const shootingStars = document.querySelector(".shooting-stars");
-if (shootingStars && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-  const spawnShootingStar = () => {
-    const star = document.createElement("span");
-    star.className = "shooting-star";
-    const startLeft = 8 + Math.random() * 70;
-    const startTop = 4 + Math.random() * 42;
-    const distance = 160 + Math.random() * 160;
-    const angle = 22 + Math.random() * 18;
-    const duration = 0.65 + Math.random() * 0.45;
-    const rad = (angle * Math.PI) / 180;
-
-    star.style.left = `${startLeft}%`;
-    star.style.top = `${startTop}%`;
-    star.style.setProperty("--fall-angle", `${angle}deg`);
-    star.style.setProperty("--fall-x", `${Math.cos(rad) * distance}px`);
-    star.style.setProperty("--fall-y", `${Math.sin(rad) * distance}px`);
-    star.style.setProperty("--fall-duration", `${duration}s`);
-
-    shootingStars.appendChild(star);
-    star.addEventListener("animationend", () => star.remove(), { once: true });
-  };
-
-  const scheduleNext = () => {
-    const delay = 3500 + Math.random() * 9000;
-    window.setTimeout(() => {
-      spawnShootingStar();
-      if (Math.random() < 0.22) {
-        window.setTimeout(spawnShootingStar, 280 + Math.random() * 520);
-      }
-      scheduleNext();
-    }, delay);
-  };
-
-  window.setTimeout(spawnShootingStar, 1800 + Math.random() * 2200);
-  scheduleNext();
-}
+const contactForm = document.getElementById("contactForm");
+const formStatus = document.getElementById("formStatus");
 
 contactForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const data = new FormData(contactForm);
-  const name = data.get("name");
-  const contact = data.get("contact");
-  const message = data.get("message");
+  if (String(data.get("company") || "").trim()) {
+    formStatus.textContent = "Не удалось отправить. Напишите на nik2shar@yahoo.com.";
+    return;
+  }
+
+  const name = String(data.get("name") || "").trim();
+  const contact = String(data.get("contact") || "").trim();
+  const message = String(data.get("message") || "").trim();
+  if (!name || !contact || !message) {
+    formStatus.textContent = "Заполните имя, контакт и описание задачи.";
+    return;
+  }
 
   const subject = encodeURIComponent(`Заявка от ${name}`);
-  const bodyText = encodeURIComponent(
-    `Имя: ${name}\nКонтакт: ${contact}\n\nЗадача:\n${message}`
-  );
+  const bodyText = encodeURIComponent(`Имя: ${name}\nКонтакт: ${contact}\n\nЗадача:\n${message}`);
 
+  formStatus.textContent = "Открываю почтовую программу с готовым письмом. Если окно не появилось, напишите на nik2shar@yahoo.com.";
   window.location.href = `mailto:nik2shar@yahoo.com?subject=${subject}&body=${bodyText}`;
 });
+
+const formatInt = new Intl.NumberFormat("ru-RU");
+const hud = {
+  points: document.querySelectorAll('[data-hud="points"], [data-hood="points"]'),
+  fps: document.querySelectorAll('[data-hud="fps"], [data-hood="fps"]'),
+};
+
+const updateStats = ({ fps, points }) => {
+  if (fps) hud.fps.forEach((node) => { node.textContent = fps; });
+  hud.points.forEach((node) => { node.textContent = formatInt.format(points); });
+};
+
+function failScene() {
+  root.classList.add("no-webgl");
+  document.querySelector(".hud")?.remove();
+}
+
+let scene = null;
+try {
+  scene = initShip(document.getElementById("scene"), {
+    zone: document.querySelector(".voyage"),
+    onStats: updateStats,
+    onError: failScene,
+  });
+} catch (error) {
+  console.error(error);
+}
+if (!scene) failScene();
+
+const stormWord = document.querySelector(".hero h1 em");
+if (scene && stormWord) {
+  let calmTimer = 0;
+  const calm = () => scene.setStorm(0);
+  const rage = (seconds) => {
+    window.clearTimeout(calmTimer);
+    scene.setStorm(1);
+    if (seconds) calmTimer = window.setTimeout(calm, seconds * 1000);
+  };
+  stormWord.addEventListener("pointerenter", (event) => {
+    if (event.pointerType === "mouse") rage(0);
+  });
+  stormWord.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "mouse") calmTimer = window.setTimeout(calm, 1200);
+  });
+  stormWord.addEventListener("click", () => rage(6));
+}
+
+drawChart(document.getElementById("chartArt"));
+
+const route = document.getElementById("route");
+const waypointsWrap = route.querySelector(".waypoints-wrap");
+const waypoints = [...route.querySelectorAll(".waypoint")];
+const syncRoute = () => {
+  const rect = waypointsWrap.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const progress = Math.min(1, Math.max(0, (vh * 0.82 - rect.top) / (rect.height * 0.95)));
+  waypointsWrap.style.setProperty("--route", window.innerWidth > 1100 ? progress.toFixed(3) : "1");
+  waypoints.forEach((item, index) => {
+    const at = window.innerWidth > 1100 ? (index + 0.5) / waypoints.length : 0;
+    item.classList.toggle("is-passed", progress > at);
+  });
+};
+new IntersectionObserver(([entry]) => {
+  if (entry.isIntersecting) window.addEventListener("scroll", syncRoute, { passive: true });
+  else window.removeEventListener("scroll", syncRoute);
+  syncRoute();
+}).observe(route);
+
+window.addEventListener("load", () => {
+  const navigation = performance.getEntriesByType("navigation")[0];
+  const loadNode = document.querySelector('[data-hood="load"]');
+  const weightNode = document.querySelector('[data-hood="weight"]');
+  window.setTimeout(() => {
+    if (navigation && loadNode) {
+      const end = navigation.loadEventEnd || performance.now();
+      loadNode.textContent = `${(end / 1000).toFixed(2).replace(".", ",")} с`;
+    }
+    if (weightNode) {
+      const bytes = performance
+        .getEntriesByType("resource")
+        .filter((entry) => /\.(js|css)(\?|$)/.test(entry.name))
+        .reduce((sum, entry) => sum + (entry.encodedBodySize || 0), 0);
+      if (bytes) weightNode.textContent = `${formatInt.format(Math.round(bytes / 1024))} КБ`;
+    }
+  }, 50);
+});
+
+import("./demos/index.js").then(({ initDemos }) => initDemos());
