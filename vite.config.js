@@ -15,17 +15,30 @@ const https =
       }
     : undefined;
 
+const proxy = { "/api": "http://127.0.0.1:8790" };
+
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.join(rootDir, "index.html"),
+        privacy: path.join(rootDir, "privacy.html"),
+        consent: path.join(rootDir, "consent.html"),
+      },
+    },
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,
     strictPort: true,
     https,
+    proxy,
   },
   preview: {
     host: "0.0.0.0",
     port: 4173,
     strictPort: true,
     https,
+    proxy,
   },
 });

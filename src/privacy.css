@@ -1,0 +1,132 @@
+@import "@fontsource/cormorant/cyrillic-500.css";
+@import "@fontsource/cormorant/latin-500.css";
+@import "@fontsource/cormorant/cyrillic-600.css";
+@import "@fontsource/cormorant/latin-600.css";
+@import "@fontsource-variable/onest/wght.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+@import "./styles.css";
+
+.legal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: var(--header-h);
+  padding: 0.75rem var(--gutter);
+  border-bottom: 1px solid var(--line);
+}
+
+.legal-back {
+  font-size: 0.875rem;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
+.legal-back:hover {
+  color: var(--gold);
+}
+
+.legal {
+  max-width: calc(46rem + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vw, 5rem) var(--gutter);
+}
+
+.legal h1 {
+  font-size: clamp(2.3rem, 6vw, 3.75rem);
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.legal h2 {
+  margin: 2.75rem 0 0.9rem;
+  font-size: clamp(1.55rem, 3.4vw, 2.05rem);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.legal h3 {
+  margin: 1.75rem 0 0.75rem;
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.legal p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.legal .legal-date {
+  margin: 1rem 0 2rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--dim);
+}
+
+.legal ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+  color: var(--muted);
+}
+
+.legal li + li {
+  margin-top: 0.4rem;
+}
+
+.legal li::marker {
+  color: var(--gold);
+}
+
+.legal a {
+  color: var(--gold-2);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.legal a:hover {
+  color: var(--gold);
+}
+
+.legal-facts {
+  margin: 0 0 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.legal-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  gap: 0.25rem 1.5rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.legal-facts dt {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: var(--dim);
+}
+
+.legal-facts dd {
+  color: var(--paper);
+}
+
+.legal ~ .site-footer .footer-end {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+@media (max-width: 640px) {
+  .legal-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

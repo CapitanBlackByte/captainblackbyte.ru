@@ -455,18 +455,23 @@
       <form class="contact-form" id="contactForm">
         <label>
           <span>Имя</span>
-          <input type="text" name="name" placeholder="Как к Вам обращаться" autocomplete="name" required />
+          <input type="text" name="name" placeholder="Как к Вам обращаться" autocomplete="name" maxlength="100" required />
         </label>
         <label>
           <span>Email или Telegram</span>
-          <input type="text" name="contact" placeholder="@username или email" required />
+          <input type="text" name="contact" placeholder="@username или email" maxlength="200" required />
         </label>
         <label>
           <span>Задача</span>
-          <textarea name="message" rows="5" placeholder="Что нужно сделать и к какому сроку" required></textarea>
+          <span class="grow-field"><textarea name="message" rows="5" placeholder="Что нужно сделать и к какому сроку" maxlength="8000" required></textarea></span>
         </label>
         <label class="hp" aria-hidden="true">Не заполняйте<input type="text" name="company" tabindex="-1" autocomplete="off" /></label>
+        <label class="form-consent">
+          <input type="checkbox" name="consent" required />
+          <span>Даю <a href="/consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a></span>
+        </label>
         <button class="button" type="submit">Отправить</button>
+        <p class="form-note">Как мы обрабатываем данные, описано в <a href="/privacy.html">политике</a>.</p>
         <p class="form-status" id="formStatus" role="status"></p>
       </form>
     </section>
@@ -484,16 +489,16 @@
       </dl>
     </div>
     <div class="footer-end">
-      <a class="logo" href="#top" aria-label="Капитан Чёрный Байт, наверх">
-        <img class="logo-mark" src="/captain-96.webp" alt="" width="40" height="41" loading="lazy" />
-        <span class="logo-text"><small>Капитан</small>Чёрный Байт</span>
-      </a>
-      <p>Чертим, строим, спускаем на&nbsp;воду</p>
-      <p class="footer-right">© <span id="currentYear"></span> · <a href="#top">Наверх</a></p>
       <p class="footer-legal">
         <span>ИП Шаройко Николай Николаевич</span>
         <span>ИНН 771549646448</span>
         <span>ОГРНИП 326774600625701</span>
+      </p>
+      <p class="footer-links">
+        <a href="/privacy.html">Политика ПД</a>
+        <span class="footer-dot" aria-hidden="true">·</span>
+        <a href="/consent.html">Согласие</a>
+        <span class="footer-year">© <span id="currentYear">2026</span></span>
       </p>
     </div>
   </footer>
