@@ -626,7 +626,7 @@ html.no-webgl .scene-fallback {
   text-shadow: 0 2px 40px rgba(5, 8, 15, 0.8);
 }
 
-.anatomy-intro > p:last-child {
+.anatomy-intro p:last-child {
   max-width: 34rem;
   margin: 1.5rem auto 0;
   color: #dfe4ee;
@@ -759,7 +759,7 @@ html.no-webgl .scene-fallback {
   text-shadow: 0 2px 50px rgba(5, 8, 15, 0.9);
 }
 
-.storm > p:last-child {
+.storm p:last-child {
   max-width: 36rem;
   margin: 1.75rem auto 0;
   color: #dfe4ee;
@@ -1948,6 +1948,7 @@ html.no-webgl .scene-fallback {
 
   .logo-text {
     font-size: 1.25rem;
+    text-shadow: 0 1px 10px rgba(5, 8, 15, 0.95);
   }
 
   .hero {
@@ -2089,6 +2090,49 @@ html.no-webgl .scene-fallback {
   }
 }
 
+/* На узком экране текст идёт поверх корабля. Затемнение едет вместе с текстом и держит контраст
+   в любой момент прокрутки, а мягкие края не дают ему выглядеть плашкой. */
+@media (max-width: 760px), (max-aspect-ratio: 21/20) {
+  .scene-copy {
+    position: relative;
+  }
+
+  .scene-copy::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -1.75rem;
+    right: calc(-1 * var(--gutter));
+    bottom: calc(-1.75rem - var(--veil-below, 0rem));
+    left: calc(-1 * var(--gutter));
+    background: linear-gradient(
+      180deg,
+      rgba(5, 8, 15, 0),
+      rgba(5, 8, 15, 0.18) 0.7rem,
+      rgba(5, 8, 15, 0.5) 1.2rem,
+      rgba(5, 8, 15, 0.84) 1.75rem,
+      rgba(5, 8, 15, 0.84) calc(100% - 1.75rem),
+      rgba(5, 8, 15, 0.5) calc(100% - 1.2rem),
+      rgba(5, 8, 15, 0.18) calc(100% - 0.7rem),
+      rgba(5, 8, 15, 0)
+    );
+    pointer-events: none;
+  }
+
+  /* Подсказка листать стоит ниже текста и должна оставаться на затемнении. */
+  .hero-copy {
+    --veil-below: 5.25rem;
+  }
+
+  .scene-fallback {
+    top: 1rem;
+    right: 50%;
+    bottom: auto;
+    width: min(92vw, 34rem);
+    transform: translateX(50%);
+  }
+}
+
 @media (max-aspect-ratio: 21/20) {
   .hero {
     justify-content: flex-end;
@@ -2118,6 +2162,51 @@ html.no-webgl .scene-fallback {
 
   .storm {
     padding-top: 22vh;
+  }
+}
+
+/* На широком экране при прокрутке по кораблю проходят заголовки «Услуги» и «Кейсы». Затемнение здесь
+   размером с текст: полоса во всю ширину перекрыла бы луну. */
+@media (min-width: 761px) and (min-aspect-ratio: 21/20) {
+  .anatomy-intro .scene-copy,
+  .storm .scene-copy {
+    position: relative;
+    width: fit-content;
+    margin-inline: auto;
+  }
+
+  .anatomy-intro .scene-copy::before,
+  .storm .scene-copy::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -2rem -2.5rem;
+    background: rgba(5, 8, 15, 0.74);
+    filter: blur(1.25rem);
+    pointer-events: none;
+  }
+}
+
+/* Телефон лёжа: высоты мало, поэтому текст стоит слева, а корабль справа от него. */
+@media (min-width: 761px) and (max-height: 560px) {
+  .hero-copy {
+    max-width: 56vw;
+  }
+}
+
+/* На маленьком телефоне место нужнее кораблю: иначе он уходит под логотип и за край экрана.
+   Высоту в условие не берём: на iPhone она меняется при прокрутке вместе с панелями браузера. */
+@media (max-width: 380px) {
+  .hero {
+    padding-bottom: 1.5rem;
+  }
+
+  .hero-copy {
+    --veil-below: 1.5rem;
+  }
+
+  .hero-foot {
+    display: none;
   }
 }
 

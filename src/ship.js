@@ -2,8 +2,8 @@ import { REGION, buildBoat, buildShipCloud, clamp, lerp, smooth } from "./ship-c
 
 // Камера и подсветка для каждого блока страницы, к которому привязан скролл.
 const KEYS = {
-  hero: { yaw: -0.34, pitch: 0.02, dist: 29, look: [0.2, 3.5, 0], shift: [0.38, -0.17], nShift: [0, 0.46], nDist: 0.66 },
-  intro: { yaw: -0.05, pitch: 0.02, dist: 38, look: [0, 4, 0], shift: [0, -0.46], nShift: [0, -0.36], nDist: 0.56 },
+  hero: { yaw: -0.34, pitch: 0.02, nPitch: -0.04, dist: 29, look: [0.2, 3.5, 0], shift: [0.38, -0.17], nShift: [0, 0.46], nDist: 0.66, lowShift: [0.62, -0.17], lowDist: 1.25 },
+  intro: { yaw: 0.06, pitch: 0.02, dist: 38, look: [0, 4, 0], shift: [0, -0.5], nShift: [0, -0.36], nDist: 0.56 },
   sails: { yaw: -0.22, pitch: -0.03, dist: 15.5, look: [0.6, 5.1, 0], shift: [0.3, -0.04], nShift: [0, 0.38], nDist: 0.72, hi: REGION.sails },
   rigging: { yaw: 0.42, pitch: 0.05, dist: 13.5, look: [2.2, 4.8, 0], shift: [-0.3, 0], nShift: [0, 0.38], nDist: 0.8, hi: REGION.rigging },
   hull: { yaw: -0.5, pitch: 0.12, dist: 13, look: [0.2, 1.5, 0], shift: [0.28, 0.02], nShift: [0, 0.42], nDist: 0.72, hi: REGION.hull },
@@ -24,6 +24,9 @@ const MOON_AZ = (() => {
   return [x, z];
 })();
 const FOV = (30 * Math.PI) / 180;
+// Габариты корабля в ракурсе hero, в единицах сцены от точки look: до флага, до воды, половина длины.
+// offset сдвигает корабль к центру экрана и уводит флаг от логотипа.
+const HERO_BOX = { up: 5.54, down: 3.62, half: 6.6, offset: 0.4 };
 
 // Яркость линии складывается из её точек. На телефоне линии прорежены, поэтому каждая точка светит
 // сильнее (thin), а изображение остаётся таким же светлым, как на компьютере.
@@ -819,8 +822,26 @@ export function initShip(canvas, options = {}) {
     requestRender();
   };
 
+  // На узком экране текст первого экрана стоит под кораблём, а его высота и видимая высота экрана
+  // у телефонов разные. Поэтому кадр считаем по месту: корабль занимает свободное место над текстом.
+  const heroCopy = document.querySelector(".hero-copy");
+  let heroFrame = null;
+  const fitHero = () => {
+    const box = canvas.getBoundingClientRect();
+    if (!heroCopy || !box.height) return;
+    const waterline = heroCopy.getBoundingClientRect().top + window.scrollY - 14;
+    const span = HERO_BOX.half * 2;
+    const size = clamp((waterline - 14) / (HERO_BOX.up + HERO_BOX.down), (box.width * 0.62) / span, (box.width - 32) / span);
+    heroFrame = {
+      dist: box.height / (2 * Math.tan(FOV / 2)) / size,
+      sx: (2 * HERO_BOX.offset * size) / box.width,
+      sy: 1 - (2 * (waterline - HERO_BOX.down * size)) / box.height,
+    };
+  };
+
   let anchors = [];
   const measure = () => {
+    fitHero();
     const vh = window.innerHeight;
     anchors = [...document.querySelectorAll("[data-scene-key]")]
       .map((el) => {
@@ -837,11 +858,14 @@ export function initShip(canvas, options = {}) {
     const regions = emptyRegions();
     if (key.hi !== undefined) regions[key.hi] = 1;
     if (key.hi === REGION.hold) regions[REGION.hull] = 0.16;
-    const shift = narrow ? key.nShift : key.shift;
+    const frame = narrow && key === KEYS.hero ? heroFrame : null;
+    // Телефон лёжа: 560 совпадает с условием для .hero-copy в стилях.
+    const low = !narrow && key.lowShift && height / renderScale <= 560;
+    const shift = frame ? [frame.sx, frame.sy] : low ? key.lowShift : narrow ? key.nShift : key.shift;
     return {
       yaw: key.yaw,
-      pitch: key.pitch,
-      dist: key.dist * (narrow ? key.nDist : 1) * fit,
+      pitch: frame ? key.nPitch : key.pitch,
+      dist: frame ? frame.dist : key.dist * (low ? key.lowDist : narrow ? key.nDist : 1) * fit,
       lx: key.look[0],
       ly: key.look[1],
       lz: key.look[2],
