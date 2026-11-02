@@ -33,9 +33,12 @@
 html {
   background: var(--ink);
   color-scheme: dark;
-  scroll-behavior: smooth;
   scroll-padding-top: calc(var(--header-h) + 1rem);
   -webkit-text-size-adjust: 100%;
+}
+
+html:not(.js) {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -46,6 +49,7 @@ body {
   font-size: 1.0625rem;
   line-height: 1.6;
   overflow-x: clip;
+  font-variant-ligatures: none;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -146,14 +150,22 @@ h2 {
 }
 
 .live-dot {
+  position: relative;
   display: inline-block;
   width: 0.5rem;
   height: 0.5rem;
   margin-right: 0.65rem;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 0 0 rgba(139, 224, 78, 0.6);
   vertical-align: 0.06em;
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--green);
   animation: live-pulse 2.4s ease-out infinite;
 }
 
@@ -353,19 +365,21 @@ h2 {
   gap: 6px;
 }
 
+/* Полоски нарисованы рамкой: браузер округляет её толщину одинаково, где бы она ни оказалась на экране. */
 .menu-button span {
-  width: 16px;
-  height: 1.5px;
-  background: var(--paper);
+  flex: none;
+  width: 18px;
+  height: 0;
+  border-top: 2px solid var(--paper);
   transition: transform 0.25s ease;
 }
 
 .menu-button.active span:first-child {
-  transform: translateY(3.75px) rotate(45deg);
+  transform: translateY(4px) rotate(45deg);
 }
 
 .menu-button.active span:last-child {
-  transform: translateY(-3.75px) rotate(-45deg);
+  transform: translateY(-4px) rotate(-45deg);
 }
 
 .mobile-menu {
@@ -391,6 +405,27 @@ h2 {
   font-size: clamp(2.2rem, 9vw, 3.2rem);
   line-height: 1.1;
   color: var(--paper);
+}
+
+/* Затемнение при переходе на дальний блок: шапка остаётся на месте, меняется только страница. */
+
+.page-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.62s ease;
+}
+
+.page-veil.is-on {
+  opacity: 1;
+  transition: opacity 0.22s ease-out;
+}
+
+.page-veil.is-instant {
+  transition: none;
 }
 
 /* Сцена и первый экран */
@@ -479,6 +514,10 @@ html.no-webgl .scene-fallback {
 .hero-copy > :nth-child(3) { animation-delay: 0.2s; }
 .hero-copy > :nth-child(4) { animation-delay: 0.3s; }
 .hero-copy > :nth-child(5) { animation-delay: 0.4s; }
+
+.hero .eyebrow {
+  text-shadow: 0 1px 12px rgba(5, 8, 15, 0.9);
+}
 
 .hero h1 {
   max-width: 8.2em;
@@ -1203,6 +1242,7 @@ html.no-webgl .scene-fallback {
 
 .article-title {
   display: block;
+  text-wrap: balance;
   font-family: var(--serif);
   font-size: clamp(1.8rem, 3.4vw, 3rem);
   font-weight: 500;
@@ -1425,20 +1465,34 @@ html.no-webgl .scene-fallback {
   border-top: 1px solid var(--line);
 }
 
-.footer-top {
+.footer-end {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem 2rem;
   max-width: var(--max);
-  margin: 0 auto;
+  margin: 2rem auto 0;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
 }
 
-.footer-top p {
+.footer-end p {
   margin: 0;
   font-size: 0.875rem;
   color: var(--muted);
+}
+
+.footer-end .footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem 1.75rem;
+  flex-basis: 100%;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
 }
 
 .footer-right a {
@@ -1451,9 +1505,7 @@ html.no-webgl .scene-fallback {
 
 .hood {
   max-width: var(--max);
-  margin: 2rem auto 0;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--line);
+  margin: 0 auto;
 }
 
 .hood-title {
@@ -1486,6 +1538,29 @@ html.no-webgl .scene-fallback {
   color: var(--gold);
   font-variant-numeric: lining-nums tabular-nums;
 }
+
+/* Секции ниже первого экрана браузер считает и рисует, только когда до них доходит очередь.
+   Примерная высота нужна, чтобы страница не прыгала при прокрутке. */
+
+.anatomy-intro,
+.stop,
+.storm,
+.case,
+.section,
+.route,
+.site-footer {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto var(--estimate, 1px);
+}
+
+.case { --estimate: 900px; }
+.codex { --estimate: 1120px; }
+.arsenal { --estimate: 1100px; }
+.route { --estimate: 1140px; }
+.logbook { --estimate: 1100px; }
+.faq { --estimate: 450px; }
+.contact { --estimate: 870px; }
+.site-footer { --estimate: 300px; }
 
 /* Читалка статей */
 
@@ -1645,8 +1720,8 @@ html.no-webgl .scene-fallback {
 }
 
 @keyframes live-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(139, 224, 78, 0.55); }
-  70%, 100% { box-shadow: 0 0 0 0.6rem rgba(139, 224, 78, 0); }
+  0% { opacity: 0.55; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(3.4); }
 }
 
 @keyframes cue-drop {
@@ -1740,12 +1815,29 @@ html.no-webgl .scene-fallback {
   .faq {
     padding-top: clamp(3rem, 7vw, 5rem);
   }
+
+  .case { --estimate: 1240px; }
+  .codex { --estimate: 1200px; }
+  .arsenal { --estimate: 930px; }
+  .route { --estimate: 950px; }
+  .logbook { --estimate: 950px; }
+  .faq { --estimate: 590px; }
+  .contact { --estimate: 1200px; }
 }
 
 @media (max-width: 760px) {
   body {
     font-size: 1rem;
   }
+
+  .case { --estimate: 1700px; }
+  .codex { --estimate: 1460px; }
+  .arsenal { --estimate: 1250px; }
+  .route { --estimate: 1100px; }
+  .logbook { --estimate: 1035px; }
+  .faq { --estimate: 565px; }
+  .contact { --estimate: 1265px; }
+  .site-footer { --estimate: 490px; }
 
   .header-actions .button-small {
     display: none;
@@ -1876,6 +1968,19 @@ html.no-webgl .scene-fallback {
   .hood-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .footer-end .footer-legal {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 340px) {
+  .hero-actions .button {
+    flex-basis: 7rem;
+    padding-inline: 0.5rem;
+    font-size: 0.85rem;
+  }
 }
 
 @media (max-aspect-ratio: 21/20) {
@@ -1910,8 +2015,47 @@ html.no-webgl .scene-fallback {
   }
 }
 
+/* На телефоне размытие под карточками пересчитывается на каждый кадр сцены и тормозит прокрутку,
+   поэтому плашки просто плотнее. */
+@media (pointer: coarse) {
+  .button-ghost,
+  .site-header.is-scrolled,
+  .stop-card,
+  .rail,
+  .reader-backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .button-ghost {
+    background: rgba(8, 12, 22, 0.68);
+  }
+
+  .site-header.is-scrolled {
+    background: rgba(5, 8, 15, 0.95);
+  }
+
+  .stop-card {
+    background: rgba(6, 10, 18, 0.9);
+  }
+
+  .rail {
+    background: rgba(6, 10, 18, 0.92);
+  }
+
+  .reader-backdrop {
+    background: rgba(3, 5, 10, 0.92);
+  }
+
+  .hero h1,
+  .anatomy-intro h2,
+  .storm h2 {
+    text-shadow: 0 1px 16px rgba(5, 8, 15, 0.8);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html {
+  html:not(.js) {
     scroll-behavior: auto;
   }
 

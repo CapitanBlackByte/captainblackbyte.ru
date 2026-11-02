@@ -11,8 +11,18 @@ const DEMOS = {
   load: initLoad,
 };
 
+// Модель запускается, когда до неё остался примерно экран прокрутки.
 export function initDemos() {
-  document.querySelectorAll("[data-demo]").forEach((mount) => {
-    DEMOS[mount.dataset.demo]?.(mount);
-  });
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        observer.unobserve(entry.target);
+        const mount = entry.target.querySelector("[data-demo]");
+        DEMOS[mount.dataset.demo]?.(mount);
+      });
+    },
+    { rootMargin: "100% 0px" }
+  );
+  document.querySelectorAll("[data-demo]").forEach((mount) => observer.observe(mount.closest(".case")));
 }

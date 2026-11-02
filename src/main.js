@@ -39,19 +39,88 @@ const cleanAddress = () => {
   if (window.location.hash) history.replaceState(null, "", next);
 };
 
+// Переходы внутри страницы. Соседний блок проезжаем мягкой прокруткой, а на дальний уходим
+// через затемнение: проматывать десятки экранов за секунду неприятно для глаз.
+const veil = document.getElementById("pageVeil");
+const VEIL_IN = 220;
+const GLIDE_SCREENS = 1.6;
+let glideFrame = 0;
+let trip = 0;
+
+const land = (target) => target.scrollIntoView({ behavior: "instant", block: "start" });
+
+const landingY = (target) => {
+  const padding = parseFloat(getComputedStyle(root).scrollPaddingTop) || 0;
+  const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+  return Math.max(0, target.getBoundingClientRect().top + window.scrollY - padding - margin);
+};
+
+const stopGlide = () => {
+  cancelAnimationFrame(glideFrame);
+  glideFrame = 0;
+};
+
+function glideTo(y) {
+  const from = window.scrollY;
+  const distance = y - from;
+  const duration = 620 + (Math.abs(distance) / window.innerHeight / GLIDE_SCREENS) * 480;
+  const start = performance.now();
+  const frame = (now) => {
+    const t = Math.min(1, Math.max(0, (now - start) / duration));
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(2 - 2 * t, 3) / 2;
+    window.scrollTo(0, from + distance * eased);
+    glideFrame = t < 1 ? requestAnimationFrame(frame) : 0;
+  };
+  glideFrame = requestAnimationFrame(frame);
+}
+
+function crossTo(target, covered) {
+  trip += 1;
+  const current = trip;
+  veil.classList.toggle("is-instant", covered);
+  veil.classList.add("is-on");
+  window.setTimeout(() => {
+    if (current !== trip) return;
+    land(target);
+    // Секции вокруг цели дорисовываются после прыжка и могут её сдвинуть: уточняем место перед показом.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (current !== trip) return;
+        land(target);
+        veil.classList.remove("is-on", "is-instant");
+      });
+    });
+  }, covered ? 0 : VEIL_IN);
+}
+
+function travel(target, fromMenu) {
+  stopGlide();
+  if (reduced) {
+    land(target);
+    return;
+  }
+  const y = landingY(target);
+  if (fromMenu || Math.abs(y - window.scrollY) > window.innerHeight * GLIDE_SCREENS) crossTo(target, fromMenu);
+  else glideTo(y);
+}
+
+["wheel", "pointerdown", "keydown"].forEach((name) => {
+  window.addEventListener(name, stopGlide, { passive: true });
+});
+
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
   link.addEventListener("click", (event) => {
     const target = document.getElementById(link.getAttribute("href").slice(1));
     if (!target) return;
     event.preventDefault();
-    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    travel(target, !!link.closest("#mobileMenu"));
     cleanAddress();
   });
 });
 
 if (window.location.hash) {
   const target = document.getElementById(window.location.hash.slice(1));
-  if (target) target.scrollIntoView({ block: "start" });
+  if (target) land(target);
   cleanAddress();
 }
 
@@ -192,7 +261,7 @@ contactForm.addEventListener("submit", (event) => {
 
   const data = new FormData(contactForm);
   if (String(data.get("company") || "").trim()) {
-    formStatus.textContent = "Не удалось отправить. Напишите на nik2shar@yahoo.com.";
+    formStatus.textContent = "Не удалось отправить. Напишите на CaptainBlackByte@yandex.ru.";
     return;
   }
 
@@ -207,8 +276,8 @@ contactForm.addEventListener("submit", (event) => {
   const subject = encodeURIComponent(`Заявка от ${name}`);
   const bodyText = encodeURIComponent(`Имя: ${name}\nКонтакт: ${contact}\n\nЗадача:\n${message}`);
 
-  formStatus.textContent = "Открываю почтовую программу с готовым письмом. Если окно не появилось, напишите на nik2shar@yahoo.com.";
-  window.location.href = `mailto:nik2shar@yahoo.com?subject=${subject}&body=${bodyText}`;
+  formStatus.textContent = "Открываю почтовую программу с готовым письмом. Если окно не появилось, напишите на CaptainBlackByte@yandex.ru.";
+  window.location.href = `mailto:CaptainBlackByte@yandex.ru?subject=${subject}&body=${bodyText}`;
 });
 
 const formatInt = new Intl.NumberFormat("ru-RU");
@@ -227,20 +296,24 @@ function failScene() {
   document.querySelector(".hud")?.remove();
 }
 
-let scene = null;
-try {
-  scene = initShip(document.getElementById("scene"), {
-    zone: document.querySelector(".voyage"),
-    onStats: updateStats,
-    onError: failScene,
-  });
-} catch (error) {
-  console.error(error);
-}
-if (!scene) failScene();
+function startScene() {
+  let scene = null;
+  try {
+    scene = initShip(document.getElementById("scene"), {
+      zone: document.querySelector(".voyage"),
+      onStats: updateStats,
+      onError: failScene,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+  if (!scene) {
+    failScene();
+    return;
+  }
 
-const stormWord = document.querySelector(".hero h1 em");
-if (scene && stormWord) {
+  const stormWord = document.querySelector(".hero h1 em");
+  if (!stormWord) return;
   let calmTimer = 0;
   const calm = () => scene.setStorm(0);
   const rage = (seconds) => {
@@ -257,9 +330,11 @@ if (scene && stormWord) {
   stormWord.addEventListener("click", () => rage(6));
 }
 
-drawChart(document.getElementById("chartArt"));
+// Сначала браузер показывает текст, и только потом поднимается сцена.
+requestAnimationFrame(() => window.setTimeout(startScene));
 
 const route = document.getElementById("route");
+let chartDrawn = false;
 const waypointsWrap = route.querySelector(".waypoints-wrap");
 const waypoints = [...route.querySelectorAll(".waypoint")];
 const syncRoute = () => {
@@ -272,29 +347,44 @@ const syncRoute = () => {
     item.classList.toggle("is-passed", progress > at);
   });
 };
-new IntersectionObserver(([entry]) => {
-  if (entry.isIntersecting) window.addEventListener("scroll", syncRoute, { passive: true });
-  else window.removeEventListener("scroll", syncRoute);
-  syncRoute();
-}).observe(route);
+new IntersectionObserver(
+  ([entry]) => {
+    if (entry.isIntersecting) {
+      if (!chartDrawn) drawChart(document.getElementById("chartArt"));
+      chartDrawn = true;
+      window.addEventListener("scroll", syncRoute, { passive: true });
+    } else {
+      window.removeEventListener("scroll", syncRoute);
+    }
+    syncRoute();
+  },
+  { rootMargin: "100% 0px" }
+).observe(route);
 
-window.addEventListener("load", () => {
+const updateHood = () => {
   const navigation = performance.getEntriesByType("navigation")[0];
   const loadNode = document.querySelector('[data-hood="load"]');
   const weightNode = document.querySelector('[data-hood="weight"]');
-  window.setTimeout(() => {
-    if (navigation && loadNode) {
-      const end = navigation.loadEventEnd || performance.now();
-      loadNode.textContent = `${(end / 1000).toFixed(2).replace(".", ",")} с`;
-    }
-    if (weightNode) {
-      const bytes = performance
-        .getEntriesByType("resource")
-        .filter((entry) => /\.(js|css)(\?|$)/.test(entry.name))
-        .reduce((sum, entry) => sum + (entry.encodedBodySize || 0), 0);
-      if (bytes) weightNode.textContent = `${formatInt.format(Math.round(bytes / 1024))} КБ`;
-    }
-  }, 50);
-});
+  if (navigation && loadNode) {
+    const end = navigation.loadEventEnd || performance.now();
+    loadNode.textContent = `${(end / 1000).toFixed(2).replace(".", ",")} с`;
+  }
+  if (weightNode) {
+    const bytes = performance
+      .getEntriesByType("resource")
+      .filter((entry) => /\.(js|css)(\?|$)/.test(entry.name))
+      .reduce((sum, entry) => sum + (entry.encodedBodySize || 0), 0);
+    if (bytes) weightNode.textContent = `${formatInt.format(Math.round(bytes / 1024))} КБ`;
+  }
+};
 
-import("./demos/index.js").then(({ initDemos }) => initDemos());
+window.addEventListener("load", () => window.setTimeout(updateHood, 50));
+new IntersectionObserver(([entry]) => {
+  if (entry.isIntersecting) updateHood();
+}).observe(document.getElementById("hood"));
+
+const whenIdle = (task) => {
+  if ("requestIdleCallback" in window) requestIdleCallback(task, { timeout: 1500 });
+  else window.setTimeout(task, 300);
+};
+whenIdle(() => import("./demos/index.js").then(({ initDemos }) => initDemos()));

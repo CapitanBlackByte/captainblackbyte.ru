@@ -1,35 +1,4 @@
-const REGION = { rigging: 0, sails: 1, hull: 2, hold: 3, boat: 4, flag: 5 };
-const KIND = { line: 0, fill: 1, ghost: 2, xray: 3 };
-
-// Контуры частей корабля в пикселях исходного рисунка hero-ship.png.
-const SAILS = [
-  { mast: 530, poly: [[462, 292], [598, 262], [640, 398], [548, 362], [452, 412], [444, 360]] },
-  { mast: 530, poly: [[418, 436], [640, 398], [664, 640], [545, 585], [420, 652], [402, 540]] },
-  { mast: 530, poly: [[412, 656], [664, 640], [640, 782], [530, 722], [440, 730], [420, 690]] },
-  { mast: 855, poly: [[780, 165], [932, 130], [975, 300], [850, 250], [768, 322], [752, 250]] },
-  { mast: 855, poly: [[722, 350], [990, 302], [1022, 590], [850, 552], [735, 612], [698, 480]] },
-  { mast: 855, poly: [[720, 625], [1022, 590], [990, 760], [850, 712], [752, 738], [726, 680]] },
-  { mast: 1180, poly: [[1042, 606], [1334, 246], [1290, 440], [1342, 612], [1180, 568], [1095, 578]] },
-  { mast: 240, poly: [[178, 672], [316, 655], [272, 700], [292, 726], [195, 726]] },
-  { mast: 300, poly: [[150, 594], [445, 385], [368, 640], [215, 604]] },
-].map((sail) => {
-  const xs = sail.poly.map(([x]) => x);
-  const ys = sail.poly.map(([, y]) => y);
-  return {
-    ...sail,
-    minX: Math.min(...xs),
-    maxX: Math.max(...xs),
-    minY: Math.min(...ys),
-    maxY: Math.max(...ys),
-  };
-});
-const HULL = [
-  [288, 728], [345, 735], [480, 772], [660, 792], [850, 802], [1000, 790], [1108, 742], [1180, 698],
-  [1240, 640], [1412, 618], [1412, 800], [1335, 812], [1312, 942], [476, 942], [420, 845], [335, 795],
-];
-const DECK = HULL.slice(0, 10);
-const HOLD_LINE = 868;
-const MASTS = [530, 855, 1180];
+import { REGION, buildBoat, buildShipCloud, clamp, lerp, smooth } from "./ship-cloud.js";
 
 // Камера и подсветка для каждого блока страницы, к которому привязан скролл.
 const KEYS = {
@@ -44,16 +13,67 @@ const KEYS = {
 };
 
 const MOON_DIR = normalize([0.3, 0.155, -0.94]);
+const MOON_X = normalize([MOON_DIR[2], 0, -MOON_DIR[0]]);
+const MOON_Y = [
+  MOON_DIR[1] * MOON_X[2] - MOON_DIR[2] * MOON_X[1],
+  MOON_DIR[2] * MOON_X[0] - MOON_DIR[0] * MOON_X[2],
+  MOON_DIR[0] * MOON_X[1] - MOON_DIR[1] * MOON_X[0],
+];
+const MOON_AZ = (() => {
+  const [x, , z] = normalize([MOON_DIR[0], 0, MOON_DIR[2]]);
+  return [x, z];
+})();
 const FOV = (30 * Math.PI) / 180;
+
+// Яркость линии складывается из её точек. На телефоне линии прорежены, поэтому каждая точка светит
+// сильнее (thin), а изображение остаётся таким же светлым, как на компьютере.
+const DESKTOP_PROFILE = {
+  density: { line: 0.92, fill: 0.13, ghost: 0.34, deck: 1 },
+  thin: 1,
+  oceanGain: 1,
+  dim: 0.17,
+  lineSize: 1,
+  knee: 0.3,
+  halfSky: false,
+  bloomFirst: 1,
+  bloomLevels: 4,
+};
+const PHONE_PROFILE = {
+  density: { line: 0.62, fill: 0.11, ghost: 0.34, deck: 0.39 },
+  thin: 3,
+  oceanGain: 1,
+  dim: 0.17,
+  lineSize: 1,
+  knee: 0.3,
+  // Небо мягкое, поэтому считаем его в половинном разрешении и растягиваем на весь кадр.
+  halfSky: true,
+  // Свечение считаем сразу с четверти экрана: радиус тот же, работы втрое меньше.
+  bloomFirst: 2,
+  bloomLevels: 3,
+};
+
+// Ступени качества сверху вниз. scale ограничен плотностью экрана, reflect — доля точек в отражении,
+// gap — минимальная пауза между кадрами в мс: 28 даёт 30 кадров в секунду.
+const DESKTOP_LEVELS = [
+  { scale: 1.75, lod: 1, bloom: true, clouds: true, reflect: 0.6, gap: 0 },
+  { scale: 1.4, lod: 1, bloom: true, clouds: true, reflect: 0.6, gap: 0 },
+  { scale: 1.12, lod: 1, bloom: true, clouds: true, reflect: 0.6, gap: 0 },
+  { scale: 0.9, lod: 1, bloom: true, clouds: true, reflect: 0.6, gap: 0 },
+  { scale: 0.9, lod: 1, bloom: false, clouds: false, reflect: 0.6, gap: 0 },
+  { scale: 0.9, lod: 0.7, bloom: false, clouds: false, reflect: 0.3, gap: 28 },
+];
+const PHONE_LEVELS = [
+  { scale: 1.5, lod: 1, bloom: true, clouds: true, reflect: 0.35, gap: 15 },
+  { scale: 1.25, lod: 1, bloom: true, clouds: true, reflect: 0.35, gap: 15 },
+  { scale: 1.25, lod: 0.85, bloom: true, clouds: true, reflect: 0.25, gap: 28 },
+  { scale: 1, lod: 0.85, bloom: true, clouds: false, reflect: 0.25, gap: 28 },
+  { scale: 0.85, lod: 0.65, bloom: false, clouds: false, reflect: 0, gap: 28 },
+];
 
 function normalize([x, y, z]) {
   const l = Math.hypot(x, y, z) || 1;
   return [x / l, y / l, z / l];
 }
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const smooth = (t) => t * t * (3 - 2 * t);
-const lerp = (a, b, t) => a + (b - a) * t;
-
 function perspective(fovy, aspect, near, far) {
   const f = 1 / Math.tan(fovy / 2);
   const nf = 1 / (near - far);
@@ -127,270 +147,6 @@ function shipMatrix(heave, pitch, roll, pivotX) {
   ];
 }
 
-const inPoly = (poly, x, y) => {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i, i += 1) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
-};
-
-const sailAt = (px, py) => {
-  for (let i = 0; i < SAILS.length; i += 1) {
-    const s = SAILS[i];
-    if (px >= s.minX && px <= s.maxX && py >= s.minY && py <= s.maxY && inPoly(s.poly, px, py)) return s;
-  }
-  return null;
-};
-
-const toWorld = (px, py) => [(px - 760) / 100, (925 - py) / 100];
-
-const hullBeam = (x) => {
-  const t = clamp((x + 4.75) / 11.3);
-  const bow = Math.pow(Math.sin((Math.min(t / 0.6, 1) * Math.PI) / 2), 0.72);
-  const stern = 1 - 0.3 * smooth(clamp((t - 0.6) / 0.4));
-  return 1.6 * bow * stern;
-};
-
-const hullZ = (x, y) => hullBeam(x) * (0.66 + 0.34 * clamp(y / 2.2));
-
-const sailBelly = (sail, px, py) => {
-  const u = clamp((px - sail.minX) / (sail.maxX - sail.minX));
-  const v = clamp((py - sail.minY) / (sail.maxY - sail.minY));
-  return Math.sin(u * Math.PI) * Math.sin(v * Math.PI);
-};
-
-const sailZ = (sail, belly, x) => (x - (sail.mast - 760) / 100) * 0.42 + belly * 0.5;
-
-const riggingZ = (y) => 1.05 * Math.exp(-Math.max(0, y - 2.1) * 0.62);
-
-function deckY(x) {
-  const px = x * 100 + 760;
-  for (let i = 1; i < DECK.length; i += 1) {
-    if (px <= DECK[i][0]) {
-      const [x0, y0] = DECK[i - 1];
-      const [x1, y1] = DECK[i];
-      return (925 - lerp(y0, y1, (px - x0) / (x1 - x0))) / 100;
-    }
-  }
-  return (925 - DECK[DECK.length - 1][1]) / 100;
-}
-
-function buildShipCloud(image, density) {
-  const W = image.naturalWidth;
-  const H = image.naturalHeight;
-  const source = document.createElement("canvas");
-  source.width = W;
-  source.height = H;
-  const ctx = source.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(image, 0, 0);
-  const pixels = ctx.getImageData(0, 0, W, H).data;
-
-  const line = new Uint8Array(W * H);
-  for (let i = 0; i < W * H; i += 1) if (pixels[i * 4 + 3] > 40) line[i] = 1;
-
-  const wall = new Uint8Array(W * H);
-  const reach = 3;
-  for (let y = 0; y < H; y += 1) {
-    for (let x = 0; x < W; x += 1) {
-      if (!line[y * W + x]) continue;
-      const top = Math.max(0, y - reach);
-      const bottom = Math.min(H - 1, y + reach);
-      const left = Math.max(0, x - reach);
-      const right = Math.min(W - 1, x + reach);
-      for (let ny = top; ny <= bottom; ny += 1) wall.fill(1, ny * W + left, ny * W + right + 1);
-    }
-  }
-
-  const outside = new Uint8Array(W * H);
-  const stack = [0];
-  outside[0] = 1;
-  while (stack.length) {
-    const p = stack.pop();
-    const x = p % W;
-    const y = (p / W) | 0;
-    if (x > 0 && !outside[p - 1] && !wall[p - 1]) { outside[p - 1] = 1; stack.push(p - 1); }
-    if (x < W - 1 && !outside[p + 1] && !wall[p + 1]) { outside[p + 1] = 1; stack.push(p + 1); }
-    if (y > 0 && !outside[p - W] && !wall[p - W]) { outside[p - W] = 1; stack.push(p - W); }
-    if (y < H - 1 && !outside[p + W] && !wall[p + W]) { outside[p + W] = 1; stack.push(p + W); }
-  }
-
-  const points = [];
-  const push = (x, y, z, region, kind, sway) => {
-    points.push(x, y, z, region, Math.random(), kind, sway);
-  };
-
-  for (let py = 0; py < H; py += 1) {
-    for (let px = 0; px < W; px += 1) {
-      const i = py * W + px;
-      const isLine = line[i] === 1;
-      const isInside = !isLine && !outside[i] && !wall[i];
-      if (!isLine && !isInside) continue;
-      if (isLine ? Math.random() > density.line : Math.random() > density.fill) continue;
-
-      const [x, y] = toWorld(px, py);
-      const sail = sailAt(px, py);
-      const hull = !sail && inPoly(HULL, px, py);
-
-      if (isLine) {
-        if (sail) {
-          const belly = sailBelly(sail, px, py);
-          push(x, y, sailZ(sail, belly, x), REGION.sails, KIND.line, 1 + belly);
-        } else if (hull) {
-          const z = hullZ(x, y);
-          const region = py > HOLD_LINE ? REGION.hold : REGION.hull;
-          push(x, y, z, region, KIND.line, 0);
-          if (Math.random() < density.ghost) push(x, y, -z, region, KIND.ghost, 0);
-        } else {
-          const onMast = MASTS.some((mast) => Math.abs(px - mast) < 9);
-          const z = onMast ? 0 : riggingZ(y) * Math.min(1, hullBeam(x) / 1.2);
-          push(x, y, z, REGION.rigging, KIND.line, 0.14);
-        }
-      } else if (sail) {
-        const belly = sailBelly(sail, px, py);
-        push(x, y, sailZ(sail, belly, x), REGION.sails, KIND.fill, 1 + belly);
-      } else if (hull) {
-        push(x, y, hullZ(x, y), py > HOLD_LINE ? REGION.hold : REGION.hull, KIND.fill, 0);
-      }
-    }
-  }
-
-  // Палуба: поперечные балки между бортами.
-  for (let x = -3.9; x <= 6.2; x += 0.42) {
-    const y = deckY(x);
-    const beam = hullZ(x, y);
-    for (let s = -1; s <= 1; s += 0.05) push(x, y, s * beam, REGION.hull, KIND.ghost, 0);
-  }
-
-  // Ящики в трюме: видны только при «просвечивании» на блоке про 1С.
-  const edges = [
-    [0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [2, 6], [3, 7],
-  ];
-  for (let cx = -2.3; cx <= 3.6; cx += 0.98) {
-    for (let tier = 0; tier < 2; tier += 1) {
-      for (const side of [-0.42, 0.42]) {
-        const size = 0.78;
-        const corners = [];
-        for (let c = 0; c < 8; c += 1) {
-          corners.push([
-            cx + (c & 1 ? size : -size) / 2,
-            0.05 + tier * 0.6 + (c & 2 ? 0.52 : 0),
-            side + (c & 4 ? 0.34 : -0.34),
-          ]);
-        }
-        for (const [a, b] of edges) {
-          for (let t = 0; t <= 1; t += 0.06) {
-            push(
-              lerp(corners[a][0], corners[b][0], t),
-              lerp(corners[a][1], corners[b][1], t),
-              lerp(corners[a][2], corners[b][2], t),
-              REGION.hold,
-              KIND.xray,
-              0
-            );
-          }
-        }
-      }
-    }
-  }
-
-  // Флаг с </> вместо черепа.
-  const flag = document.createElement("canvas");
-  flag.width = 240;
-  flag.height = 130;
-  const g = flag.getContext("2d", { willReadFrequently: true });
-  g.fillStyle = "#fff";
-  g.beginPath();
-  g.moveTo(240, 0);
-  g.lineTo(0, 12);
-  g.lineTo(38, 65);
-  g.lineTo(0, 118);
-  g.lineTo(240, 130);
-  g.closePath();
-  g.fill();
-  g.globalCompositeOperation = "destination-out";
-  g.font = "700 76px Consolas, monospace";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText("</>", 138, 66);
-  const flagData = g.getImageData(0, 0, 240, 130).data;
-  for (let fy = 0; fy < 130; fy += 2) {
-    for (let fx = 0; fx < 240; fx += 2) {
-      if (flagData[(fy * 240 + fx) * 4 + 3] < 128) continue;
-      push(0.95 - (1 - fx / 240) * 1.75, 8.85 - (fy / 130) * 0.95, 0, REGION.flag, KIND.line, 0);
-    }
-  }
-
-  return shuffled(points, 7);
-}
-
-function buildBoat() {
-  const points = [];
-  const push = (x, y, z, kind = KIND.line) => points.push(x, y, z, REGION.boat, Math.random(), kind, 0);
-  const L = 2.5;
-  const B = 0.62;
-  const H = 0.42;
-  const halfBeam = (s) => B * Math.pow(Math.sin(Math.PI * s), 0.62);
-  for (let s = 0; s <= 1; s += 0.004) {
-    const x = (s - 0.5) * L;
-    const rise = 0.12 * Math.pow(Math.abs(s - 0.5) * 2, 2.4);
-    for (const side of [-1, 1]) {
-      push(x, H + rise, side * halfBeam(s));
-      push(x, H * 0.72 + rise, side * halfBeam(s) * 0.96);
-      push(x, H * 0.36, side * halfBeam(s) * 0.68);
-    }
-    push(x, 0, 0);
-  }
-  for (let s = 0.08; s < 0.95; s += 0.056) {
-    const x = (s - 0.5) * L;
-    const b = halfBeam(s);
-    for (let a = -1; a <= 1; a += 0.03) push(x, H * Math.pow(Math.abs(a), 1.7), a * b);
-  }
-  for (let t = 0; t <= 1; t += 0.004) {
-    push(-0.25, 0.1 + t * 2.1, 0);
-    const yard = (t - 0.5) * 1.5;
-    push(-0.25 + yard, 1.52 + yard * 0.46, 0);
-  }
-  for (let i = 0; i < 2600; i += 1) {
-    const a = Math.random();
-    const b = Math.random();
-    const sa = Math.sqrt(a);
-    const u = 1 - sa;
-    const v = sa * (1 - b);
-    const w = sa * b;
-    const x = u * -1.0 + v * 0.5 + w * -0.14;
-    const y = u * 1.18 + v * 1.88 + w * 0.42;
-    const belly = Math.sin(Math.min(v + w, 1) * Math.PI) * Math.sin(Math.min(u + v, 1) * Math.PI) * 0.22;
-    push(x, y, belly, i % 5 === 0 ? KIND.line : KIND.fill);
-  }
-  for (const side of [-1, 1]) {
-    for (let t = 0; t <= 1; t += 0.01) {
-      push(0.22 + t * 0.34, H + 0.04 - t * 0.5, side * (0.34 + t * 0.95));
-    }
-  }
-  return shuffled(points, 7);
-}
-
-function shuffled(flat, stride) {
-  const count = flat.length / stride;
-  const order = new Uint32Array(count);
-  for (let i = 0; i < count; i += 1) order[i] = i;
-  for (let i = count - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const tmp = order[i];
-    order[i] = order[j];
-    order[j] = tmp;
-  }
-  const data = new Float32Array(flat.length);
-  for (let i = 0; i < count; i += 1) {
-    const from = order[i] * stride;
-    for (let k = 0; k < stride; k += 1) data[i * stride + k] = flat[from + k];
-  }
-  return { data, count };
-}
-
 function buildOcean(nx, nz) {
   const data = new Float32Array(nx * nz * 3);
   let k = 0;
@@ -436,29 +192,36 @@ const wave = (x, z, t) =>
   0.05 * Math.sin(2.33 * x - 1.71 * z + 2.07 * t + 0.4);
 
 const FULLSCREEN_VS = `#version 300 es
-out vec2 vNdc;
 out vec2 vUv;
 void main() {
   vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
-  vNdc = p * 2. - 1.;
   vUv = p;
-  gl_Position = vec4(vNdc, 0., 1.);
+  gl_Position = vec4(p * 2. - 1., 0., 1.);
+}`;
+
+const SKY_VS = `#version 300 es
+uniform mat4 uInvVP;
+uniform vec2 uShift;
+out vec4 vFar;
+void main() {
+  vec2 ndc = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2) * 2. - 1.;
+  vFar = uInvVP * vec4(ndc - uShift, 1., 1.);
+  gl_Position = vec4(ndc, 0., 1.);
 }`;
 
 const SKY_FS = `#version 300 es
 precision highp float;
-in vec2 vNdc;
+in vec4 vFar;
 out vec4 o;
-uniform mat4 uInvVP;
-uniform vec2 uShift;
-uniform vec3 uCam, uMoon;
+uniform mediump sampler2D uNoise;
+uniform vec3 uCam, uMoon, uMoonX, uMoonY;
+uniform vec2 uMoonAz;
 uniform float uTime, uStorm, uFlash, uDetail;
 
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
   f = f * f * (3. - 2. * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+  return texture(uNoise, (i + f + .5) / 256.).r;
 }
 float fbm(vec2 p) {
   float a = .5, s = 0.;
@@ -467,8 +230,7 @@ float fbm(vec2 p) {
 }
 
 void main() {
-  vec4 far = uInvVP * vec4(vNdc - uShift, 1., 1.);
-  vec3 dir = normalize(far.xyz / far.w - uCam);
+  vec3 dir = normalize(vFar.xyz / vFar.w - uCam);
   float h = dir.y;
   float up = max(h, 0.);
 
@@ -476,18 +238,22 @@ void main() {
   col = mix(col, vec3(.006, .012, .030), smoothstep(.1, .6, up));
   if (h < 0.) col = mix(vec3(.042, .08, .125), vec3(.005, .011, .022), smoothstep(0., .2, -h));
 
-  float md = acos(clamp(dot(dir, uMoon), -1., 1.));
-  float az = pow(max(dot(normalize(dir.xz + 1e-4), normalize(uMoon.xz)), 0.), 22.);
-  col += vec3(.34, .22, .10) * az * exp(-abs(h) * 13.) * .7;
+  float toMoon = dot(dir, uMoon);
+  float md = sqrt(max(2. - 2. * toMoon, 0.));
+  if (abs(h) < .45) {
+    float az = max(dot(normalize(dir.xz + 1e-4), uMoonAz), 0.);
+    float az2 = az * az;
+    float az4 = az2 * az2;
+    float az8 = az4 * az4;
+    col += vec3(.34, .22, .10) * az8 * az8 * az4 * az2 * exp(-abs(h) * 13.) * .7;
+  }
   col += vec3(.95, .74, .42) * (exp(-md * 5.2) * .075 + exp(-md * 15.) * .16);
 
   const float R = .098;
-  vec3 mx = normalize(cross(vec3(0, 1, 0), uMoon));
-  vec3 my = cross(uMoon, mx);
-  vec2 q = vec2(dot(dir, mx), dot(dir, my)) / R;
+  vec2 q = vec2(dot(dir, uMoonX), dot(dir, uMoonY)) / R;
   float rr = dot(q, q);
   float storm = smoothstep(.0, .8, uStorm);
-  if (rr < 1. && dot(dir, uMoon) > 0.) {
+  if (rr < 1. && toMoon > 0.) {
     float z = sqrt(1. - rr);
     float maria = fbm(q * 2.2 + 4.) * .75 + fbm(q * 7. + 9.) * .25;
     vec3 surface = mix(vec3(.46, .36, .23), vec3(.92, .80, .58), smoothstep(.28, .72, maria));
@@ -545,7 +311,7 @@ layout(location = 0) in vec3 aPoint;
 uniform mat4 uVP;
 uniform vec2 uShift;
 uniform vec3 uCam, uMoon;
-uniform float uTime, uTravel, uAmp, uPx, uStorm, uFlash, uAssemble;
+uniform float uTime, uTravel, uAmp, uPx, uStorm, uFlash, uAssemble, uGain;
 out vec4 vCol;
 ${WAVE_GLSL}
 void main() {
@@ -589,7 +355,7 @@ void main() {
   float fade = smoothstep(165., 60., dist) * smoothstep(1.5, 6., dist);
   float size = (.04 + crest * .02 + foam * .03 + wake * .025);
   gl_PointSize = clamp(uPx * size / dist, 1., 6.5);
-  vCol = vec4(col * fade * (1. - inHull * smoothstep(.2, .9, uAssemble)), 1.);
+  vCol = vec4(col * fade * uGain * (1. - inHull * smoothstep(.2, .9, uAssemble)), 1.);
 }`;
 
 const SHIP_VS = `#version 300 es
@@ -598,7 +364,7 @@ layout(location = 1) in vec4 aInfo;
 uniform mat4 uVP, uModel;
 uniform vec2 uShift;
 uniform vec3 uMouse;
-uniform float uTime, uAssemble, uPx, uStorm, uFlash, uMouseForce, uPass, uXray, uHiAny, uAlpha;
+uniform float uTime, uAssemble, uPx, uStorm, uFlash, uMouseForce, uPass, uXray, uHiAny, uAlpha, uGain, uThin, uDim, uLineSize;
 uniform float uRegions[6];
 out vec4 vCol;
 
@@ -629,11 +395,14 @@ void main() {
   k = k * k * (3. - 2. * k);
   p = mix(scatter, p, k);
 
-  vec3 d = p - uMouse;
-  d.z *= .3;
-  float m = exp(-dot(d, d) / 1.15) * uMouseForce;
-  p += normalize(d + 1e-4) * m * (.14 + seed * .5);
-  p.z += h.z * m * .45;
+  float m = 0.;
+  if (uMouseForce > .001) {
+    vec3 d = p - uMouse;
+    d.z *= .3;
+    m = exp(-dot(d, d) / 1.15) * uMouseForce;
+    p += normalize(d + 1e-4) * m * (.14 + seed * .5);
+    p.z += h.z * m * .45;
+  }
 
   vec4 wp = uModel * vec4(p, 1.);
 
@@ -659,7 +428,7 @@ void main() {
   vec3 hot = vec3(.60, 1., .36);
   vec3 base = kind == 1 ? cream : gold;
   float alpha = kind == 0 ? 1. : kind == 1 ? .016 : kind == 2 ? .26 : 0.;
-  float size = kind == 1 ? .1 : .019;
+  float size = kind == 1 ? .1 : .019 * uLineSize;
   if (kind == 1 && region == 1) alpha = .01 + max(sway - 1., 0.) * .03;
 
   if (kind == 3) {
@@ -670,22 +439,24 @@ void main() {
   if (region == 5) {
     base = vec3(1., .13, .07);
     alpha = .42;
-    size = .03;
+    size = .03 * uLineSize;
   }
 
+  float gain = uGain * (region >= 4 || kind == 3 ? 1. : uThin);
+
+  // Проход с тенью: сюда приходят только заливка и флаг.
   if (uPass > .5 && uPass < 1.5) {
-    bool solid = kind == 1 || region == 5;
-    gl_PointSize = solid ? clamp(uPx * (region == 5 ? .05 : .13) / dist, 2., 30.) : 0.;
-    if (!solid) gl_Position = vec4(2., 2., 2., 1.);
+    gl_PointSize = clamp(uPx * (region == 5 ? .05 : .13) / dist, 2., 30.);
     float a = region == 1 ? .22 : region == 5 ? .9 : .5;
     a *= mix(1., .32, uHiAny * (1. - uRegions[region]));
+    a = 1. - pow(1. - a, gain);
     vCol = vec4(0., 0., 0., a * smoothstep(.55, 1., k) * uAlpha);
     return;
   }
 
-  float focus = mix(mix(1., .17, uHiAny), kind == 1 ? .42 : 1.55, w);
+  float focus = mix(mix(1., uDim, uHiAny), kind == 1 ? .42 : 1.55, w);
   if (region == 5) focus = max(focus, .7);
-  vec3 c = mix(base, hot, w * .92) * alpha * focus * shimmer;
+  vec3 c = mix(base, hot, w * .92) * alpha * focus * shimmer * gain;
   c *= 1. + uFlash * 1.7;
   c *= mix(.32, 1., smoothstep(.0, .55, k));
   c += vec3(1., .85, .55) * m * .35 * alpha;
@@ -738,11 +509,11 @@ out vec4 o;
 void main() { o = vec4(vec3(2.4, 2.7, 3.6) * uFlash, 1.); }`;
 
 const DOWN_FS = `#version 300 es
-precision highp float;
-in vec2 vUv;
+precision mediump float;
+in highp vec2 vUv;
 out vec4 o;
-uniform sampler2D uTex;
-uniform vec2 uPixel;
+uniform mediump sampler2D uTex;
+uniform highp vec2 uPixel;
 uniform float uKnee;
 void main() {
   vec3 c = texture(uTex, vUv).rgb * 4.;
@@ -756,11 +527,11 @@ void main() {
 }`;
 
 const UP_FS = `#version 300 es
-precision highp float;
-in vec2 vUv;
+precision mediump float;
+in highp vec2 vUv;
 out vec4 o;
-uniform sampler2D uTex;
-uniform vec2 uPixel;
+uniform mediump sampler2D uTex;
+uniform highp vec2 uPixel;
 void main() {
   vec3 c = texture(uTex, vUv + uPixel * vec2(-2, 0)).rgb;
   c += texture(uTex, vUv + uPixel * vec2(2, 0)).rgb;
@@ -773,42 +544,75 @@ void main() {
   o = vec4(c / 12., 1.);
 }`;
 
-const COMPOSITE_FS = `#version 300 es
-precision highp float;
-in vec2 vUv;
+const COPY_FS = `#version 300 es
+precision mediump float;
+in highp vec2 vUv;
 out vec4 o;
-uniform sampler2D uScene, uBloom;
-uniform float uBloomAmt, uFade;
+uniform mediump sampler2D uTex;
+void main() { o = texture(uTex, vUv); }`;
+
+const COMPOSITE_FS = `#version 300 es
+precision mediump float;
+in highp vec2 vUv;
+out vec4 o;
+uniform mediump sampler2D uScene, uBloom;
+uniform float uBloomAmt, uFade, uWhite;
 void main() {
   vec3 c = texture(uScene, vUv).rgb + texture(uBloom, vUv).rgb * uBloomAmt;
-  c = 1. - exp(-c * 1.3);
+  c = (1. - exp(-c * 1.3)) * uWhite;
   vec2 v = vUv - .5;
   c *= 1. - dot(v, v) * .55;
-  float n = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(.06711056, .00583715))));
+  highp float n = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(.06711056, .00583715))));
   c += (n - .5) / 200.;
   o = vec4(c * uFade, 1.);
 }`;
 
+// Шейдеры собираются в фоне: результат проверяем, только когда сборка закончена.
 function compile(gl, vs, fs) {
   const shader = (type, source) => {
     const s = gl.createShader(type);
     gl.shaderSource(s, source);
     gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
     return s;
   };
   const program = gl.createProgram();
-  gl.attachShader(program, shader(gl.VERTEX_SHADER, vs));
-  gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fs));
+  const vertex = shader(gl.VERTEX_SHADER, vs);
+  const fragment = shader(gl.FRAGMENT_SHADER, fs);
+  gl.attachShader(program, vertex);
+  gl.attachShader(program, fragment);
   gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
-  const uniforms = {};
+  return { program, vertex, fragment, uniforms: {} };
+}
+
+function finishProgram(gl, entry) {
+  const { program, vertex, fragment, uniforms } = entry;
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    throw new Error(gl.getProgramInfoLog(program) || gl.getShaderInfoLog(vertex) || gl.getShaderInfoLog(fragment));
+  }
   const total = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
   for (let i = 0; i < total; i += 1) {
     const name = gl.getActiveUniform(program, i).name.replace("[0]", "");
     uniforms[name] = gl.getUniformLocation(program, name);
   }
-  return { program, uniforms };
+}
+
+function noiseTexture(gl) {
+  const size = 256;
+  const data = new Uint8Array(size * size);
+  let seed = 48271;
+  for (let i = 0; i < data.length; i += 1) {
+    seed = (seed * 16807) % 2147483647;
+    data[i] = seed & 255;
+  }
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, size, size, 0, gl.RED, gl.UNSIGNED_BYTE, data);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  return texture;
 }
 
 function pointBuffer(gl, data, layout) {
@@ -861,7 +665,18 @@ export function initShip(canvas, options = {}) {
   const zone = options.zone || canvas;
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const weak = coarse && (navigator.hardwareConcurrency || 4) <= 4;
+  const dpr = window.devicePixelRatio || 1;
+  const profile = coarse ? PHONE_PROFILE : DESKTOP_PROFILE;
+  const LEVELS = (coarse ? PHONE_LEVELS : DESKTOP_LEVELS).filter(
+    (q, i, all) =>
+      i === 0 ||
+      Math.min(dpr, q.scale) !== Math.min(dpr, all[i - 1].scale) ||
+      q.lod !== all[i - 1].lod ||
+      q.bloom !== all[i - 1].bloom ||
+      q.clouds !== all[i - 1].clouds ||
+      q.gap !== all[i - 1].gap
+  );
+  const COLOR = [gl.COLOR_ATTACHMENT0];
 
   const hdrExtension = !!(gl.getExtension("EXT_color_buffer_float") || gl.getExtension("EXT_color_buffer_half_float"));
   const hdrFormat = [gl.RGBA16F, gl.RGBA, gl.HALF_FLOAT];
@@ -876,7 +691,7 @@ export function initShip(canvas, options = {}) {
   const targetFormat = hdrReady ? hdrFormat : [gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE];
 
   const programs = {
-    sky: compile(gl, FULLSCREEN_VS, SKY_FS),
+    sky: compile(gl, SKY_VS, SKY_FS),
     stars: compile(gl, STARS_VS, POINT_FS),
     ocean: compile(gl, OCEAN_VS, POINT_FS),
     ship: compile(gl, SHIP_VS, POINT_FS),
@@ -884,9 +699,13 @@ export function initShip(canvas, options = {}) {
     bolt: compile(gl, BOLT_VS, BOLT_FS),
     down: compile(gl, FULLSCREEN_VS, DOWN_FS),
     up: compile(gl, FULLSCREEN_VS, UP_FS),
+    copy: compile(gl, FULLSCREEN_VS, COPY_FS),
     composite: compile(gl, FULLSCREEN_VS, COMPOSITE_FS),
   };
+  const parallelCompile = gl.getExtension("KHR_parallel_shader_compile");
+  let linked = false;
 
+  const noise = noiseTexture(gl);
   const emptyVao = gl.createVertexArray();
   const oceanSize = coarse ? [190, 110] : [330, 170];
   const oceanCount = oceanSize[0] * oceanSize[1];
@@ -921,48 +740,67 @@ export function initShip(canvas, options = {}) {
 
   let shipVao = null;
   let shipCount = 0;
+  let shipSolids = 0;
+  let shipXray = 0;
   let assemble = reduced ? 1 : 0;
   let assembleStart = 0;
 
-  const image = new Image();
-  image.src = options.image || "/hero-ship.webp";
-  image
-    .decode()
-    .then(() => {
-      const cloud = buildShipCloud(
-        image,
-        coarse
-          ? { line: 0.5, fill: 0.07, ghost: 0.2 }
-          : { line: 0.92, fill: 0.13, ghost: 0.34 }
-      );
-      shipVao = pointBuffer(gl, cloud.data, [3, 4]);
-      shipCount = cloud.count;
-      assembleStart = performance.now();
-      if (reduced) requestRender();
-    })
-    .catch(() => {
-      options.onError?.();
-    });
+  const useCloud = (cloud) => {
+    shipVao = pointBuffer(gl, cloud.data, [3, 4]);
+    shipCount = cloud.count;
+    shipSolids = cloud.solids;
+    shipXray = cloud.xray;
+    if (reduced) requestRender();
+  };
+
+  const maskUrl = coarse ? "/hero-ship-mask-1024.webp" : "/hero-ship-mask.webp";
+  const buildHere = () => {
+    const image = new Image();
+    image.src = maskUrl;
+    image
+      .decode()
+      .then(() => useCloud(buildShipCloud(image, profile.density)))
+      .catch(() => options.onError?.());
+  };
+
+  // Корабль считается в отдельном потоке, чтобы страница в это время откликалась.
+  if (typeof Worker === "function" && typeof OffscreenCanvas === "function") {
+    const worker = new Worker(new URL("./ship-cloud.worker.js", import.meta.url), { type: "module" });
+    worker.onmessage = ({ data }) => {
+      worker.terminate();
+      if (data.failed) buildHere();
+      else useCloud(data);
+    };
+    worker.onerror = () => {
+      worker.terminate();
+      buildHere();
+    };
+    worker.postMessage({ url: new URL(maskUrl, window.location.href).href, density: profile.density });
+  } else {
+    buildHere();
+  }
 
   let width = 1;
   let height = 1;
-  let renderScale = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 1.75);
-  let bloomOn = !weak;
-  let detail = !weak;
-  let lod = 1;
+  let level = 0;
+  let renderScale = Math.min(dpr, LEVELS[0].scale);
   let scene = null;
+  let sky = null;
   let chain = [];
 
   const allocate = () => {
     if (scene) destroyTarget(gl, scene);
+    if (sky) destroyTarget(gl, sky);
     chain.forEach((target) => destroyTarget(gl, target));
     scene = createTarget(gl, width, height, ...targetFormat);
+    sky = profile.halfSky ? createTarget(gl, Math.max(2, width >> 1), Math.max(2, height >> 1), ...targetFormat) : null;
     chain = [];
     let w = width;
     let h = height;
-    for (let i = 0; i < 4; i += 1) {
-      w = Math.max(2, w >> 1);
-      h = Math.max(2, h >> 1);
+    for (let i = 0; i < profile.bloomLevels; i += 1) {
+      const shift = i === 0 ? profile.bloomFirst : 1;
+      w = Math.max(2, w >> shift);
+      h = Math.max(2, h >> shift);
       chain.push(createTarget(gl, w, h, ...targetFormat));
     }
   };
@@ -1074,14 +912,75 @@ export function initShip(canvas, options = {}) {
   let nextBolt = 2;
   let stormWanted = 0;
   let stormExtra = 0;
-  const started = performance.now();
+  let started = performance.now();
   let last = started;
   let fade = reduced ? 1 : 0;
 
   const stats = { fps: 0, points: 0, ready: false };
   let frames = 0;
   let framesStart = started;
-  let slowWindows = 0;
+
+  // Сколько проходит от начала кадра до момента, когда видеокарта его дорисовала.
+  // Замер не останавливает страницу: результат забираем, когда он готов.
+  const gpuTimes = [];
+  let fence = null;
+  const measureGpu = (frameStart) => {
+    if (fence) return;
+    fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    let unfinished = performance.now();
+    const poll = () => {
+      if (!fence) return;
+      const status = gl.clientWaitSync(fence, 0, 0);
+      if (status === gl.TIMEOUT_EXPIRED) {
+        unfinished = performance.now();
+        window.setTimeout(poll, 2);
+        return;
+      }
+      gl.deleteSync(fence);
+      fence = null;
+      // Таймер мог опоздать сам по себе, поэтому считаем только время, когда кадр точно ещё рисовался.
+      if (status !== gl.WAIT_FAILED) gpuTimes.push(unfinished - frameStart);
+    };
+    window.setTimeout(poll, 1);
+  };
+
+  const setLevel = (next) => {
+    level = next;
+    const scale = Math.min(dpr, LEVELS[level].scale);
+    if (scale !== renderScale) {
+      renderScale = scale;
+      resize();
+    }
+  };
+
+  // Снижаем качество, только если кадров мало и упираемся именно в видеокарту:
+  // браузер в режиме экономии сам ограничивает частоту кадров, и картинку это портить не должно.
+  // Когда нагрузка спадает, качество возвращается. Если устройство снова не справилось,
+  // выше этой ступени сцена больше не поднимается.
+  let calmWindows = 0;
+  let climbed = false;
+  let ceiling = 0;
+  const adjustQuality = (fps) => {
+    const wanted = LEVELS[level].gap >= 28 ? 30 : 60;
+    const sorted = gpuTimes.splice(0).sort((a, b) => a - b);
+    const gpu = sorted.length ? sorted[sorted.length >> 1] : Infinity;
+    const budget = (1000 / wanted) * 0.62;
+    const enoughFrames = fps >= wanted * 0.88;
+    if (!enoughFrames && gpu >= budget && level < LEVELS.length - 1) {
+      const over = gpu / budget;
+      if (climbed) ceiling = Math.max(ceiling, level + 1);
+      setLevel(Math.min(level + (over > 4 ? 3 : over > 2 ? 2 : 1), LEVELS.length - 1));
+      calmWindows = 0;
+      return;
+    }
+    calmWindows = enoughFrames && gpu < budget * 0.45 ? calmWindows + 1 : 0;
+    if (calmWindows >= 4 && level > ceiling) {
+      setLevel(level - 1);
+      climbed = true;
+      calmWindows = 0;
+    }
+  };
 
   const spawnBolt = (shipX) => {
     const verts = [];
@@ -1122,6 +1021,9 @@ export function initShip(canvas, options = {}) {
   };
 
   const render = (now) => {
+    const frameStart = performance.now();
+    const quality = LEVELS[level];
+    const lod = quality.lod;
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     const time = reduced ? 8 : (now - started) / 1000;
@@ -1133,6 +1035,7 @@ export function initShip(canvas, options = {}) {
       for (const name of Object.keys(state)) state[name] += (target[name] - state[name]) * k;
     }
     if (shipCount && !reduced) {
+      if (!assembleStart) assembleStart = now;
       assemble = clamp((now - assembleStart) / 3400);
     }
     if (!reduced) fade = clamp((now - started) / 1000);
@@ -1197,22 +1100,40 @@ export function initShip(canvas, options = {}) {
       }
     }
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, scene.framebuffer);
-    gl.viewport(0, 0, width, height);
+    const skyTarget = sky || scene;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, skyTarget.framebuffer);
+    gl.invalidateFramebuffer(gl.FRAMEBUFFER, COLOR);
+    gl.viewport(0, 0, skyTarget.width, skyTarget.height);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
 
     let u = use(programs.sky);
     gl.bindVertexArray(emptyVao);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, noise);
+    gl.uniform1i(u.uNoise, 0);
     gl.uniformMatrix4fv(u.uInvVP, false, inv);
     gl.uniform2fv(u.uShift, shift);
     gl.uniform3fv(u.uCam, eye);
     gl.uniform3fv(u.uMoon, MOON_DIR);
+    gl.uniform3fv(u.uMoonX, MOON_X);
+    gl.uniform3fv(u.uMoonY, MOON_Y);
+    gl.uniform2fv(u.uMoonAz, MOON_AZ);
     gl.uniform1f(u.uTime, time);
     gl.uniform1f(u.uStorm, storm);
     gl.uniform1f(u.uFlash, flash);
-    gl.uniform1f(u.uDetail, detail ? 1 : 0);
+    gl.uniform1f(u.uDetail, quality.clouds ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if (sky) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, scene.framebuffer);
+      gl.invalidateFramebuffer(gl.FRAMEBUFFER, COLOR);
+      gl.viewport(0, 0, width, height);
+      u = use(programs.copy);
+      gl.bindTexture(gl.TEXTURE_2D, sky.texture);
+      gl.uniform1i(u.uTex, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
@@ -1240,6 +1161,7 @@ export function initShip(canvas, options = {}) {
     gl.uniform1f(u.uStorm, storm);
     gl.uniform1f(u.uFlash, flash);
     gl.uniform1f(u.uAssemble, assemble);
+    gl.uniform1f(u.uGain, profile.oceanGain / lod);
     const oceanDraw = Math.floor(oceanCount * lod);
     gl.drawArrays(gl.POINTS, 0, oceanDraw);
 
@@ -1254,7 +1176,12 @@ export function initShip(canvas, options = {}) {
       gl.drawArrays(gl.LINES, 0, boltVertices);
     }
 
-    const shipUniforms = (uniforms, passId, alpha, matrix) => {
+    const shipGain = quality.bloom ? 1 : 1.2;
+    const shipUniforms = (uniforms, passId, alpha, matrix, gain) => {
+      gl.uniform1f(uniforms.uGain, gain);
+      gl.uniform1f(uniforms.uThin, profile.thin);
+      gl.uniform1f(uniforms.uDim, profile.dim);
+      gl.uniform1f(uniforms.uLineSize, profile.lineSize);
       gl.uniformMatrix4fv(uniforms.uVP, false, vp);
       gl.uniformMatrix4fv(uniforms.uModel, false, matrix);
       gl.uniform2fv(uniforms.uShift, shift);
@@ -1275,19 +1202,27 @@ export function initShip(canvas, options = {}) {
     if (shipVao) {
       u = use(programs.ship);
       gl.bindVertexArray(shipVao);
-      const shipDraw = Math.floor(shipCount * lod);
+      const shipLines = shipCount - shipSolids - shipXray;
+      const crates = state.xray > 0.01;
+      const drawShip = (share) => {
+        gl.drawArrays(gl.POINTS, 0, Math.floor(shipSolids * share));
+        gl.drawArrays(gl.POINTS, shipSolids, Math.floor(shipLines * share));
+        if (crates) gl.drawArrays(gl.POINTS, shipSolids + shipLines, Math.floor(shipXray * share));
+      };
 
-      shipUniforms(u, 2, 1, model);
-      gl.drawArrays(gl.POINTS, 0, Math.floor(shipDraw * 0.6));
+      if (quality.reflect) {
+        shipUniforms(u, 2, 1, model, ((shipGain / lod) * 0.6) / quality.reflect);
+        drawShip(lod * quality.reflect);
+      }
 
       gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
-      shipUniforms(u, 1, 1, model);
-      gl.drawArrays(gl.POINTS, 0, shipDraw);
+      shipUniforms(u, 1, 1, model, shipGain / lod);
+      gl.drawArrays(gl.POINTS, 0, Math.floor(shipSolids * lod));
 
       gl.blendFunc(gl.ONE, gl.ONE);
-      shipUniforms(u, 0, 1, model);
-      gl.drawArrays(gl.POINTS, 0, shipDraw);
-      visiblePoints += shipDraw;
+      shipUniforms(u, 0, 1, model, shipGain / lod);
+      drawShip(lod);
+      visiblePoints += Math.floor((shipSolids + shipLines + (crates ? shipXray : 0)) * lod);
     }
 
     if (state.boat > 0.01) {
@@ -1302,7 +1237,7 @@ export function initShip(canvas, options = {}) {
       const bm = shipMatrix(bh, bp, br, 0);
       bm[12] += bx;
       bm[14] += bz;
-      shipUniforms(u, 0, state.boat, bm);
+      shipUniforms(u, 0, state.boat, bm, shipGain);
       gl.uniform1f(u.uAssemble, 1);
       gl.drawArrays(gl.POINTS, 0, boat.count);
       visiblePoints += boat.count;
@@ -1322,11 +1257,16 @@ export function initShip(canvas, options = {}) {
     gl.disable(gl.BLEND);
     gl.bindVertexArray(emptyVao);
 
-    if (bloomOn) {
+    if (quality.bloom) {
       let source = scene;
-      chain.forEach((level, index) => {
-        pass(source, level, programs.down, (uniforms) => gl.uniform1f(uniforms.uKnee, index === 0 ? 0.3 : 0));
-        source = level;
+      chain.forEach((mip, index) => {
+        const wide = index === 0 && profile.bloomFirst > 1;
+        pass(source, mip, programs.down, (uniforms) => {
+          gl.invalidateFramebuffer(gl.FRAMEBUFFER, COLOR);
+          gl.uniform1f(uniforms.uKnee, index === 0 ? profile.knee : 0);
+          if (wide) gl.uniform2f(uniforms.uPixel, 1 / source.width, 1 / source.height);
+        });
+        source = mip;
       });
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
@@ -1343,36 +1283,21 @@ export function initShip(canvas, options = {}) {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, chain[0].texture);
     gl.uniform1i(u.uBloom, 1);
-    gl.uniform1f(u.uBloomAmt, bloomOn ? 0.42 : 0);
+    gl.uniform1f(u.uBloomAmt, quality.bloom ? 0.42 : 0);
     gl.uniform1f(u.uFade, fade);
+    gl.uniform1f(u.uWhite, hdrReady ? 1 : 1.35);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if (!reduced) measureGpu(frameStart);
 
     frames += 1;
     if (now - framesStart >= 1000) {
       const fps = Math.round((frames * 1000) / (now - framesStart));
-      const throttled = fps < 4;
-      if (!throttled) stats.fps = fps;
+      if (fps >= 4) stats.fps = fps;
       stats.points = visiblePoints;
       stats.ready = !!shipVao;
       options.onStats?.(stats);
-      // Слабая видеокарта: сначала снижаем разрешение, потом выключаем свечение и частицы.
-      if (!throttled && fps < 38 && now - started > 6000 && shipVao) {
-        slowWindows += 1;
-        if (slowWindows >= 3) {
-          slowWindows = 0;
-          if (renderScale > 0.95) {
-            renderScale *= 0.8;
-            resize();
-          } else if (bloomOn) {
-            bloomOn = false;
-            detail = false;
-          } else if (lod > 0.45) {
-            lod *= 0.75;
-          }
-        }
-      } else {
-        slowWindows = 0;
-      }
+      adjustQuality(fps);
       frames = 0;
       framesStart = now;
     }
@@ -1382,13 +1307,12 @@ export function initShip(canvas, options = {}) {
   let active = false;
   let visible = true;
 
-  // На телефонах с экраном 120 Гц незачем тратить батарею: сцене хватает 60 кадров.
-  const frameGap = coarse ? 15 : 0;
+  // Экраны 120 Гц не гоняем впустую, а слабым устройствам оставляем 30 кадров: прокрутке нужнее свободная видеокарта.
   let lastFrame = 0;
   const loop = (now) => {
     raf = 0;
     if (!active) return;
-    if (now - lastFrame >= frameGap) {
+    if (now - lastFrame >= LEVELS[level].gap) {
       lastFrame = now;
       render(now);
     }
@@ -1396,7 +1320,7 @@ export function initShip(canvas, options = {}) {
   };
 
   const setActive = (next) => {
-    if (reduced) {
+    if (reduced || !linked) {
       active = false;
       return;
     }
@@ -1415,7 +1339,7 @@ export function initShip(canvas, options = {}) {
 
   let pending = false;
   function requestRender() {
-    if (!reduced || pending || !scene) return;
+    if (!reduced || !linked || pending || !scene) return;
     pending = true;
     requestAnimationFrame((now) => {
       pending = false;
@@ -1425,6 +1349,7 @@ export function initShip(canvas, options = {}) {
 
   resize();
   new ResizeObserver(resize).observe(canvas);
+  new ResizeObserver(measure).observe(zone);
   window.addEventListener("load", measure);
   document.fonts?.ready.then(measure);
   window.addEventListener("resize", measure, { passive: true });
@@ -1438,7 +1363,10 @@ export function initShip(canvas, options = {}) {
     { rootMargin: "120px" }
   ).observe(zone);
 
-  document.addEventListener("visibilitychange", () => setActive(visible && !document.hidden));
+  document.addEventListener("visibilitychange", () => {
+    gpuTimes.length = 0;
+    setActive(visible && !document.hidden);
+  });
 
   canvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
@@ -1446,8 +1374,26 @@ export function initShip(canvas, options = {}) {
     options.onError?.();
   });
 
-  setActive(!document.hidden);
-  requestRender();
+  const whenLinked = () => {
+    const list = Object.values(programs);
+    if (parallelCompile && !list.every((entry) => gl.getProgramParameter(entry.program, parallelCompile.COMPLETION_STATUS_KHR))) {
+      requestAnimationFrame(whenLinked);
+      return;
+    }
+    try {
+      list.forEach((entry) => finishProgram(gl, entry));
+    } catch (error) {
+      console.error(error);
+      options.onError?.();
+      return;
+    }
+    linked = true;
+    started = performance.now();
+    setActive(visible && !document.hidden);
+    requestRender();
+  };
+  whenLinked();
+
   return {
     stats,
     refresh: measure,
