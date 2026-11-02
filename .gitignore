@@ -10,4 +10,8 @@ dist
 .certs/
 .tools/
 .netlify/
+bot/.env
+bot/data/
+bot/inbox/.env
+bot/inbox/data/
 

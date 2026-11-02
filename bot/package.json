@@ -1,0 +1,13 @@
+{
+  "name": "captainblackbyte-bot",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test --test-timeout=60000"
+  }
+}
