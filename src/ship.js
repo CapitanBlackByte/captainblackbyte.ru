@@ -27,6 +27,8 @@ const FOV = (30 * Math.PI) / 180;
 // Габариты корабля в ракурсе hero, в единицах сцены от точки look: до флага, до воды, половина длины.
 // offset сдвигает корабль к центру экрана и уводит флаг от логотипа.
 const HERO_BOX = { up: 5.54, down: 3.62, half: 6.6, offset: 0.4 };
+// Шлюпка в разы меньше корабля, поэтому и лупа над ней меньше: иначе она разносит лодку целиком.
+const BOAT_LENS = 0.4;
 
 // Яркость линии складывается из её точек. На телефоне линии прорежены, поэтому каждая точка светит
 // сильнее (thin), а изображение остаётся таким же светлым, как на компьютере.
@@ -366,8 +368,8 @@ layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec4 aInfo;
 uniform mat4 uVP, uModel;
 uniform vec2 uShift;
-uniform vec3 uMouse;
-uniform float uTime, uAssemble, uPx, uStorm, uFlash, uMouseForce, uPass, uXray, uHiAny, uAlpha, uGain, uThin, uDim, uLineSize;
+uniform vec3 uMouse, uMouseRay;
+uniform float uTime, uAssemble, uPx, uStorm, uFlash, uMouseForce, uMouseSize, uPass, uXray, uHiAny, uAlpha, uGain, uThin, uDim, uLineSize;
 uniform float uRegions[6];
 out vec4 vCol;
 
@@ -400,11 +402,12 @@ void main() {
 
   float m = 0.;
   if (uMouseForce > .001) {
-    vec3 d = p - uMouse;
-    d.z *= .3;
+    // Глубину вдоль луча курсора почти не считаем: так центр искажения совпадает с курсором при любом ракурсе.
+    vec3 d = (p - uMouse) / uMouseSize;
+    d -= uMouseRay * dot(d, uMouseRay) * .7;
     m = exp(-dot(d, d) / 1.15) * uMouseForce;
-    p += normalize(d + 1e-4) * m * (.14 + seed * .5);
-    p.z += h.z * m * .45;
+    p += normalize(d + 1e-4) * m * (.14 + seed * .5) * uMouseSize;
+    p += uMouseRay * h.z * m * .45 * uMouseSize;
   }
 
   vec4 wp = uModel * vec4(p, 1.);
@@ -912,14 +915,14 @@ export function initShip(canvas, options = {}) {
   let parallaxX = 0;
   let parallaxY = 0;
   let mouseForce = 0;
-  let mouseWorld = [0, 100, 0];
 
   if (!coarse && !reduced) {
     window.addEventListener(
       "pointermove",
       (event) => {
-        pointerX = (event.clientX / window.innerWidth) * 2 - 1;
-        pointerY = 1 - (event.clientY / window.innerHeight) * 2;
+        // По размеру полотна, а не окна: полоса прокрутки в полотно не входит.
+        pointerX = (event.clientX / (width / renderScale)) * 2 - 1;
+        pointerY = 1 - (event.clientY / (height / renderScale)) * 2;
         pointerSeen = true;
       },
       { passive: true }
@@ -1099,19 +1102,25 @@ export function initShip(canvas, options = {}) {
 
     const model = shipMatrix(heave, pitch, roll, 0.6);
 
-    if (pointerSeen) {
+    // Искажение считается в координатах самой модели, поэтому курсор переводим в них же:
+    // у корабля и шлюпки свои матрицы. Глубину берём по средней плоскости модели.
+    const mouseOn = (matrix) => {
+      const m = invert(multiply(vp, matrix));
       const unproject = (z) => {
-        const x = inv[0] * (pointerX - shift[0]) + inv[4] * (pointerY - shift[1]) + inv[8] * z + inv[12];
-        const y = inv[1] * (pointerX - shift[0]) + inv[5] * (pointerY - shift[1]) + inv[9] * z + inv[13];
-        const zz = inv[2] * (pointerX - shift[0]) + inv[6] * (pointerY - shift[1]) + inv[10] * z + inv[14];
-        const ww = inv[3] * (pointerX - shift[0]) + inv[7] * (pointerY - shift[1]) + inv[11] * z + inv[15];
+        const x = m[0] * (pointerX - shift[0]) + m[4] * (pointerY - shift[1]) + m[8] * z + m[12];
+        const y = m[1] * (pointerX - shift[0]) + m[5] * (pointerY - shift[1]) + m[9] * z + m[13];
+        const zz = m[2] * (pointerX - shift[0]) + m[6] * (pointerY - shift[1]) + m[10] * z + m[14];
+        const ww = m[3] * (pointerX - shift[0]) + m[7] * (pointerY - shift[1]) + m[11] * z + m[15];
         return [x / ww, y / ww, zz / ww];
       };
       const a = unproject(-1);
       const b = unproject(1);
       const t = a[2] / (a[2] - b[2]);
-      mouseWorld = [lerp(a[0], b[0], t), lerp(a[1], b[1], t), 0];
-    }
+      return {
+        point: [lerp(a[0], b[0], t), lerp(a[1], b[1], t), 0],
+        ray: normalize([b[0] - a[0], b[1] - a[1], b[2] - a[2]]),
+      };
+    };
     mouseForce += ((pointerSeen ? 1 : 0) - mouseForce) * (1 - Math.exp(-dt * 3));
 
     if (!reduced) {
@@ -1209,7 +1218,12 @@ export function initShip(canvas, options = {}) {
       gl.uniformMatrix4fv(uniforms.uVP, false, vp);
       gl.uniformMatrix4fv(uniforms.uModel, false, matrix);
       gl.uniform2fv(uniforms.uShift, shift);
-      gl.uniform3fv(uniforms.uMouse, mouseWorld);
+      if (mouseForce > 0.001) {
+        const mouse = mouseOn(matrix);
+        gl.uniform3fv(uniforms.uMouse, mouse.point);
+        gl.uniform3fv(uniforms.uMouseRay, mouse.ray);
+      }
+      gl.uniform1f(uniforms.uMouseSize, 1);
       gl.uniform1f(uniforms.uTime, time);
       gl.uniform1f(uniforms.uAssemble, assemble);
       gl.uniform1f(uniforms.uPx, px);
@@ -1263,6 +1277,7 @@ export function initShip(canvas, options = {}) {
       bm[14] += bz;
       shipUniforms(u, 0, state.boat, bm, shipGain);
       gl.uniform1f(u.uAssemble, 1);
+      gl.uniform1f(u.uMouseSize, BOAT_LENS);
       gl.drawArrays(gl.POINTS, 0, boat.count);
       visiblePoints += boat.count;
     }

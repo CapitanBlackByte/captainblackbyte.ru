@@ -1138,18 +1138,22 @@ html.no-webgl .scene-fallback {
 
 .waypoint i {
   position: absolute;
+  z-index: 1;
   top: var(--y);
   left: 50%;
   display: grid;
   place-items: center;
   width: 3rem;
   height: 3rem;
+  /* Цифры Cormorant стоят чуть выше середины строки. */
+  padding-top: 1px;
   border: 1.5px solid var(--chart-ink);
   border-radius: 50%;
   background: var(--chart);
   font-family: var(--serif);
   font-size: 1.5rem;
   font-style: normal;
+  font-variant-numeric: lining-nums;
   font-weight: 600;
   line-height: 1;
   transform: translate(-50%, -50%);
