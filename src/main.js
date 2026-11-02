@@ -368,19 +368,11 @@ function startScene() {
   const stormWord = document.querySelector(".hero h1 em");
   if (!stormWord) return;
   let calmTimer = 0;
-  const calm = () => scene.setStorm(0);
-  const rage = (seconds) => {
+  stormWord.addEventListener("click", () => {
     window.clearTimeout(calmTimer);
     scene.setStorm(1);
-    if (seconds) calmTimer = window.setTimeout(calm, seconds * 1000);
-  };
-  stormWord.addEventListener("pointerenter", (event) => {
-    if (event.pointerType === "mouse") rage(0);
+    calmTimer = window.setTimeout(() => scene.setStorm(0), 6000);
   });
-  stormWord.addEventListener("pointerleave", (event) => {
-    if (event.pointerType === "mouse") calmTimer = window.setTimeout(calm, 1200);
-  });
-  stormWord.addEventListener("click", () => rage(6));
 }
 
 // Сначала браузер показывает текст, и только потом поднимается сцена.
