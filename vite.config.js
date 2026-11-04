@@ -22,6 +22,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.join(rootDir, "index.html"),
+        flow: path.join(rootDir, "flow.html"),
         privacy: path.join(rootDir, "privacy.html"),
         consent: path.join(rootDir, "consent.html"),
       },

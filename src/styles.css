@@ -514,6 +514,55 @@ html.no-webgl .scene-fallback {
 .hero-copy > :nth-child(3) { animation-delay: 0.2s; }
 .hero-copy > :nth-child(4) { animation-delay: 0.3s; }
 .hero-copy > :nth-child(5) { animation-delay: 0.4s; }
+.hero-copy > :nth-child(6) { animation-delay: 0.5s; }
+
+.hero-promo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: 100%;
+  margin-bottom: 1.5rem;
+  padding: 0.35rem 1rem 0.35rem 0.35rem;
+  border: 1px solid rgba(242, 184, 75, 0.45);
+  border-radius: 2rem;
+  background: rgba(5, 8, 15, 0.72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--paper);
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+
+.hero-promo span {
+  flex: none;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2rem;
+  background: var(--gold);
+  color: #14100a;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero-promo::after {
+  content: "→";
+  flex: none;
+  color: var(--gold);
+  transition: transform 0.25s var(--ease);
+}
+
+.hero-promo:hover {
+  border-color: var(--gold);
+  background: rgba(10, 15, 26, 0.9);
+}
+
+.hero-promo:hover::after {
+  transform: translateX(3px);
+}
 
 .hero .eyebrow {
   text-shadow: 0 1px 12px rgba(5, 8, 15, 0.9);
@@ -884,6 +933,177 @@ html.no-webgl .scene-fallback {
   font-size: 0.78rem;
   line-height: 1.6;
   color: var(--dim);
+}
+
+/* Продукты */
+
+.products {
+  background:
+    radial-gradient(ellipse 55% 60% at 88% 45%, rgba(111, 143, 134, 0.16), transparent 70%),
+    var(--ink);
+}
+
+.product {
+  display: grid;
+  grid-template-columns: minmax(18rem, 5fr) minmax(0, 7fr);
+  gap: clamp(2rem, 5vw, 5.5rem);
+  align-items: center;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 3.5vw, 3.25rem);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    linear-gradient(135deg, rgba(242, 184, 75, 0.07), transparent 45%),
+    rgba(10, 15, 26, 0.75);
+}
+
+.product-kind {
+  display: flex;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.product-kind span {
+  color: var(--dim);
+}
+
+.product-copy h3 {
+  font-size: clamp(2.6rem, 4.4vw, 4.2rem);
+  line-height: 1;
+}
+
+.product-lead {
+  max-width: 34rem;
+  margin: 1.25rem 0 0;
+  color: #d7dde9;
+}
+
+.product-price {
+  display: flex;
+  flex-direction: column;
+  margin: 1.6rem 0;
+  padding: 1.1rem 0;
+  border-block: 1px solid var(--line);
+}
+
+.product-price strong {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 4.6vw, 4.2rem);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 1;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.product-price span {
+  max-width: 30rem;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.product-points {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.9rem;
+}
+
+.product-points li {
+  position: relative;
+  padding-left: 1.65rem;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: #d7dde9;
+}
+
+.product-points li::before {
+  content: "";
+  position: absolute;
+  top: 0.45em;
+  left: 0.15rem;
+  width: 0.75rem;
+  height: 0.42rem;
+  border-bottom: 2px solid var(--gold);
+  border-left: 2px solid var(--gold);
+  transform: rotate(-45deg);
+}
+
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.product-note {
+  margin: 1.4rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.product-shot {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 0 1.5rem 2.75rem 0;
+}
+
+/* Окно браузера вокруг снимка продукта. Цвета кнопок взяты из палитры Flow. */
+.browser {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: #090b0a;
+  box-shadow: 0 44px 90px -40px rgba(0, 0, 0, 0.9);
+  transition: transform 0.5s var(--ease), border-color 0.3s ease;
+}
+
+.browser::before {
+  content: "";
+  display: block;
+  height: 1.75rem;
+  border-bottom: 1px solid rgba(243, 236, 223, 0.08);
+  background:
+    radial-gradient(circle at 1.05rem 50%, #a85a52 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 1.8rem 50%, #c4a15a 0 0.24rem, transparent 0.26rem),
+    radial-gradient(circle at 2.55rem 50%, #6f9a62 0 0.24rem, transparent 0.26rem),
+    #111413;
+}
+
+.browser img {
+  width: 100%;
+  height: auto;
+}
+
+.product-phone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: clamp(6.5rem, 13vw, 11rem);
+  height: auto;
+  border: 1px solid var(--line-2);
+  border-radius: 1.3rem;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.95), 0 0 0 6px rgba(9, 11, 10, 0.9);
+  transition: transform 0.5s var(--ease);
+}
+
+.product-shot:hover .browser {
+  border-color: rgba(242, 184, 75, 0.45);
+  transform: translateY(-4px);
+}
+
+.product-shot:hover .product-phone {
+  transform: translateY(-10px);
 }
 
 /* Общие секции */
@@ -1661,6 +1881,7 @@ html.no-webgl .scene-fallback {
 }
 
 .case { --estimate: 900px; }
+.products { --estimate: 1100px; }
 .codex { --estimate: 1120px; }
 .arsenal { --estimate: 1100px; }
 .route { --estimate: 1140px; }
@@ -1915,7 +2136,8 @@ html.no-webgl .scene-fallback {
 
   .codex,
   .faq,
-  .contact {
+  .contact,
+  .product {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1924,6 +2146,7 @@ html.no-webgl .scene-fallback {
   }
 
   .case { --estimate: 1240px; }
+  .products { --estimate: 1500px; }
   .codex { --estimate: 1200px; }
   .arsenal { --estimate: 930px; }
   .route { --estimate: 950px; }
@@ -1938,6 +2161,7 @@ html.no-webgl .scene-fallback {
   }
 
   .case { --estimate: 1700px; }
+  .products { --estimate: 1450px; }
   .codex { --estimate: 1460px; }
   .arsenal { --estimate: 1250px; }
   .route { --estimate: 1100px; }
@@ -1993,8 +2217,39 @@ html.no-webgl .scene-fallback {
     display: none;
   }
 
+  /* На телефоне плашка продукта встаёт на место надписи над заголовком, чтобы корабль не стал меньше. */
+  .hero .eyebrow {
+    display: none;
+  }
+
+  .hero-promo {
+    gap: 0.55rem;
+    margin-bottom: 0.85rem;
+    padding: 0.25rem 0.8rem 0.25rem 0.25rem;
+    font-size: 0.82rem;
+    line-height: 1.28;
+  }
+
+  .hero-promo span {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6rem;
+  }
+
+  .product-actions .button {
+    flex: 1 1 12rem;
+  }
+
   .hero-foot {
     bottom: 0.75rem;
+  }
+
+  .product-shot {
+    padding: 0 0.75rem 2rem 0;
+  }
+
+  .product-phone {
+    border-radius: 0.9rem;
+    box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.95), 0 0 0 4px rgba(9, 11, 10, 0.9);
   }
 
   .hud {

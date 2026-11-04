@@ -1,0 +1,359 @@
+@import "@fontsource/cormorant/cyrillic-500.css";
+@import "@fontsource/cormorant/latin-500.css";
+@import "@fontsource/cormorant/cyrillic-500-italic.css";
+@import "@fontsource/cormorant/latin-500-italic.css";
+@import "@fontsource/cormorant/cyrillic-600.css";
+@import "@fontsource/cormorant/latin-600.css";
+@import "@fontsource-variable/onest/wght.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+@import "./styles.css";
+
+/* Страница BlackByte Flow. Общие части (окно браузера, цена, список с галочками) лежат в styles.css. */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Страница короткая и без тяжёлой сцены: секции рисуем сразу, чтобы переходы по якорям не промахивались. */
+.section,
+.site-footer {
+  content-visibility: visible;
+}
+
+.flow-header .desktop-nav {
+  display: flex;
+}
+
+.flow-top {
+  background:
+    radial-gradient(ellipse 60% 55% at 82% 22%, rgba(111, 143, 134, 0.22), transparent 70%),
+    radial-gradient(ellipse 45% 50% at 6% 92%, rgba(242, 184, 75, 0.1), transparent 70%),
+    var(--ink);
+}
+
+.flow-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: calc(var(--header-h) + clamp(2rem, 6vw, 5rem)) var(--gutter) clamp(2.5rem, 5vw, 4rem);
+}
+
+.flow-hero-copy > * {
+  animation: rise 1.1s var(--ease) both;
+}
+
+.flow-hero-copy > :nth-child(2) { animation-delay: 0.08s; }
+.flow-hero-copy > :nth-child(3) { animation-delay: 0.2s; }
+.flow-hero-copy > :nth-child(4) { animation-delay: 0.3s; }
+.flow-hero-copy > :nth-child(5) { animation-delay: 0.4s; }
+
+.flow-hero h1 {
+  font-size: clamp(3.6rem, 7.2vw, 7.4rem);
+  line-height: 0.92;
+}
+
+.flow-lead {
+  max-width: 34rem;
+  margin: 1.5rem 0 0;
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+  line-height: 1.55;
+  color: #dfe4ee;
+}
+
+.flow-hero .hero-actions {
+  margin-top: 0;
+}
+
+.flow-shot {
+  margin: 0;
+  animation: rise 1.2s var(--ease) 0.25s both;
+}
+
+.flow-stats {
+  padding: 0 var(--gutter) clamp(3rem, 6vw, 5rem);
+}
+
+.flow-stats dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: var(--max);
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+
+.flow-stats div {
+  padding: 1.75rem 1.5rem 0 0;
+}
+
+.flow-stats div + div {
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--line);
+}
+
+.flow-stats dt {
+  font-family: var(--serif);
+  font-size: clamp(2.6rem, 4.6vw, 4.2rem);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 1;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.flow-stats dd {
+  max-width: 19rem;
+  margin-top: 0.6rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Возможности */
+
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(2rem, 5vw, 5.5rem);
+  align-items: center;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding-block: clamp(3rem, 6vw, 5.5rem);
+  border-top: 1px solid var(--line);
+}
+
+/* Через один блок снимок слева, но колонка под него остаётся широкой. */
+.feature:nth-of-type(even) {
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+}
+
+.feature:nth-of-type(even) .feature-copy {
+  order: 2;
+}
+
+.feature-copy h3 {
+  font-size: clamp(2.1rem, 3.4vw, 3.2rem);
+  line-height: 1.04;
+}
+
+.feature-copy > p:not(.product-kind) {
+  max-width: 32rem;
+  margin: 1.1rem 0 1.5rem;
+  color: #d7dde9;
+}
+
+.feature-copy .product-points {
+  margin-bottom: 0;
+}
+
+.feature-shot {
+  min-width: 0;
+  margin: 0;
+}
+
+.flow-extras {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  max-width: var(--max);
+  margin: clamp(1rem, 3vw, 2rem) auto 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.flow-extras li {
+  padding: clamp(1.25rem, 2.5vw, 1.9rem);
+  background: var(--ink);
+}
+
+.flow-extras h3 {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.flow-extras p {
+  margin: 0.55rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Тарифы */
+
+.flow-pricing {
+  background:
+    radial-gradient(ellipse 50% 60% at 100% 0%, rgba(242, 184, 75, 0.1), transparent 65%),
+    radial-gradient(ellipse 50% 60% at 0% 100%, rgba(111, 143, 134, 0.14), transparent 65%),
+    var(--ink-1);
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  max-width: var(--max);
+  margin: 0 auto;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.4rem, 2.2vw, 1.9rem);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(5, 8, 15, 0.6);
+  transition: border-color 0.3s ease, transform 0.4s var(--ease);
+}
+
+.plan:hover {
+  border-color: rgba(242, 184, 75, 0.45);
+}
+
+.plan h3 {
+  font-size: 2.1rem;
+  line-height: 1;
+}
+
+.plan p {
+  margin: 0;
+}
+
+.plan-users {
+  margin-top: 0.5rem !important;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.5rem;
+  margin: 1.5rem 0 1.25rem !important;
+}
+
+.plan-price strong {
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 3.4vw, 3.5rem);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 1;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.plan-price span {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.plan-rival {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.plan-save {
+  margin: 0.35rem 0 1.5rem !important;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #a6e08a;
+}
+
+.plan .button {
+  margin-top: auto;
+}
+
+.plans-more {
+  max-width: var(--max);
+  margin: 2rem auto 0;
+  color: #d7dde9;
+}
+
+.plans-more a {
+  color: var(--gold);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+
+.plans-more a:hover {
+  color: var(--gold-2);
+}
+
+.plans-note {
+  max-width: var(--max);
+  margin: 1rem auto 0;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.flow-pricing + .faq {
+  padding-top: clamp(4.5rem, 9vw, 9rem);
+}
+
+@media (max-width: 1100px) {
+  .flow-hero,
+  .feature,
+  .feature:nth-of-type(even) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .feature:nth-of-type(even) .feature-copy {
+    order: 0;
+  }
+
+  .plans,
+  .flow-extras {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .flow-header .desktop-nav {
+    display: none;
+  }
+
+  .flow-header .header-actions .button-small {
+    display: inline-flex;
+  }
+
+  .flow-hero {
+    padding-top: calc(var(--header-h) + 1.75rem);
+  }
+
+  .flow-hero .hero-actions .button {
+    flex: 1 1 9rem;
+  }
+
+  .flow-stats dl,
+  .plans,
+  .flow-extras {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-stats div,
+  .flow-stats div + div {
+    padding: 1.25rem 0;
+    border-left: 0;
+  }
+
+  .flow-stats div + div {
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
